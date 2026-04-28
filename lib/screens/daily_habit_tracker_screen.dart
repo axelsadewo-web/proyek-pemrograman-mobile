@@ -84,21 +84,42 @@ class _DailyHabitTrackerScreenState
         title: const Text('Checklist Harian'),
         elevation: 0,
         centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.pushNamed(context, '/add-habit'),
+        child: const Icon(Icons.add),
+        tooltip: 'Tambah Habit Baru',
       ),
       body: habitsAsync.when(
-        data: (habits) => SingleChildScrollView(
-          child: Column(
-            children: [
-              // Progress Section
-              _buildProgressSection(progress),
-              const SizedBox(height: 16),
+        data: (habits) => RefreshIndicator(
+          onRefresh: () async {
+            ref.refresh(dailyHabitsProvider);
+            await Future.delayed(const Duration(milliseconds: 200));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                // Progress Section
+                _buildProgressSection(progress),
+                const SizedBox(height: 16),
 
-              // Habits List
-              if (habits.isEmpty)
-                _buildEmptyState()
-              else
-                _buildHabitsList(habits),
-            ],
+                // Habits List
+                if (habits.isEmpty)
+                  _buildEmptyState()
+                else
+                  _buildHabitsList(habits),
+              ],
+            ),
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -112,22 +133,28 @@ class _DailyHabitTrackerScreenState
     final completed = progress['completed'] ?? 0;
     final total = progress['total'] ?? 0;
     final percentage = total > 0 ? (completed / total) : 0.0;
+    final remaining = total - completed;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
+<<<<<<< HEAD
         gradient: LinearGradient(
           colors: [Colors.blue.shade400, Colors.blue.shade600],
+=======
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+>>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.indigo.withOpacity(0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -146,50 +173,93 @@ class _DailyHabitTrackerScreenState
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 14,
+                  vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white.withOpacity(0.22),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   '$completed/$total',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // Progress Bar dengan animasi
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             child: LinearProgressIndicator(
               value: percentage,
-              minHeight: 12,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Colors.white.withOpacity(0.9),
+              minHeight: 14,
+              backgroundColor: Colors.white.withOpacity(0.18),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFEC4899),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-
-          // Motivasi text
+          const SizedBox(height: 14),
           Text(
-            _getMotivationText(completed, total),
+            remaining <= 0
+                ? 'Semua tugas selesai. Hebat sekali!'
+                : 'Tinggal $remaining kebiasaan lagi untuk menyelesaikan semua hari ini.',
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.5,
             ),
           ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildProgressTag('Completed', '$completed', Icons.check_circle),
+              const SizedBox(width: 12),
+              _buildProgressTag('Total', '$total', Icons.list),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProgressTag(String label, String value, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.16),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.white70),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,54 +297,77 @@ class _DailyHabitTrackerScreenState
                 .toggleHabitCompletion(habit.id)
           : null,
       child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        elevation: habit.isDoneToday ? 4 : 1,
+        margin: const EdgeInsets.only(bottom: 14),
+        elevation: habit.isDoneToday ? 6 : 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
+            gradient: habit.isDoneToday
+                ? const LinearGradient(
+                    colors: [Color(0xFFDCFCE7), Color(0xFFBBF7D0)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
             color: habit.isDoneToday
-                ? Colors.green.withOpacity(0.1)
-                : Colors.transparent,
+                ? null
+                : Theme.of(context).cardColor,
             border: Border.all(
               color: habit.isDoneToday
-                  ? Colors.green.withOpacity(0.5)
-                  : Colors.grey.withOpacity(0.2),
-              width: 1.5,
+                  ? Colors.green.shade300
+                  : Colors.grey.shade200,
+              width: 1.4,
             ),
           ),
           child: ListTile(
+<<<<<<< HEAD
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
             ),
+=======
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+>>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
             title: Text(
               habit.name,
               style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
                 decoration: habit.isDoneToday
                     ? TextDecoration.lineThrough
                     : TextDecoration.none,
                 color: habit.isDoneToday
-                    ? Colors.green.shade700
-                    : Colors.black87,
+                    ? Colors.green.shade800
+                    : Colors.grey.shade900,
               ),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 if (habit.description.isNotEmpty)
                   Text(
                     habit.description,
-                    style: const TextStyle(fontSize: 12),
-                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                const SizedBox(height: 4),
+                if (habit.description.isNotEmpty) const SizedBox(height: 8),
                 Text(
                   'Terakhir: ${habit.getLastCompletedDateFormatted()}',
+<<<<<<< HEAD
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+=======
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+>>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
                 ),
               ],
             ),
