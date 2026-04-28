@@ -36,6 +36,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final authState = ref.watch(authStateProvider);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profil'),
+        elevation: 0,
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           habitsAsync.when(
@@ -51,6 +65,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               confettiController: _confettiController,
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
+              emissionFrequency: 0.05,
+              numberOfParticles: 20,
+              gravity: 0.3,
               colors: const [
                 Colors.blue,
                 Colors.green,

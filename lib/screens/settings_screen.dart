@@ -424,12 +424,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text('Pengaturan'),
         elevation: 0,
         centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
         children: [
           // Appearance Section
           _buildSectionHeader('Appearance'),
@@ -460,12 +461,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 28,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
       ),
     );
   }
@@ -474,38 +487,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.brightness_6),
-            title: const Text('Theme Mode'),
-            subtitle: Text(_getThemeModeText(currentTheme)),
-            trailing: DropdownButton<ThemeMode>(
-              value: currentTheme,
-              items: [
-                DropdownMenuItem(
-                  value: ThemeMode.system,
-                  child: const Text('System'),
-                ),
-                DropdownMenuItem(
-                  value: ThemeMode.light,
-                  child: const Text('Light'),
-                ),
-                DropdownMenuItem(
-                  value: ThemeMode.dark,
-                  child: const Text('Dark'),
-                ),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(themeModeProvider.notifier).setThemeMode(value);
-                }
-              },
-            ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        tileColor: Theme.of(context).colorScheme.surface,
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
+          child: Icon(
+            Icons.brightness_6,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        title: const Text('Theme Mode'),
+        subtitle: Text(_getThemeModeText(currentTheme)),
+        trailing: DropdownButton<ThemeMode>(
+          value: currentTheme,
+          underline: const SizedBox.shrink(),
+          items: [
+            DropdownMenuItem(
+              value: ThemeMode.system,
+              child: const Text('System'),
+            ),
+            DropdownMenuItem(
+              value: ThemeMode.light,
+              child: const Text('Light'),
+            ),
+            DropdownMenuItem(
+              value: ThemeMode.dark,
+              child: const Text('Dark'),
+            ),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              ref.read(themeModeProvider.notifier).setThemeMode(value);
+            }
+          },
+        ),
       ),
     );
   }
@@ -517,12 +539,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
           SwitchListTile(
-            secondary: const Icon(Icons.notifications),
+            activeColor: Theme.of(context).colorScheme.primary,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            secondary: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.notifications,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
             title: const Text('Daily Reminders'),
             subtitle: const Text('Get notified to complete your habits'),
             value: enabled,
@@ -555,28 +589,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.backup),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.backup,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
             title: const Text('Backup Data'),
             subtitle: const Text('Save habits data to local file'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _backupData(),
           ),
-          const Divider(),
+          const Divider(height: 1),
           ListTile(
-            leading: const Icon(Icons.restore),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.restore,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
             title: const Text('Restore Data'),
             subtitle: const Text('Load habits data from backup'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _restoreData(),
           ),
-          const Divider(),
+          const Divider(height: 1),
           ListTile(
-            leading: const Icon(Icons.file_download),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.file_download,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
             title: const Text('Export to CSV'),
             subtitle: const Text('Export habits data as CSV file'),
             trailing: const Icon(Icons.chevron_right),

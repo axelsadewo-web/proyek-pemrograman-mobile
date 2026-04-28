@@ -74,38 +74,81 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Habit Tracker Pro',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorSchemeSeed: Colors.indigo,
         useMaterial3: true,
         brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF7F9FF),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.indigo.shade600,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+          selectedItemColor: Colors.indigo.shade700,
+          unselectedItemColor: Colors.grey.shade600,
+          showUnselectedLabels: true,
+          elevation: 10,
+        ),
         cardTheme: CardTheme(
-          elevation: 4,
+          elevation: 3,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
           ),
+          color: Colors.white,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
             ),
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.indigo.shade600,
+          foregroundColor: Colors.white,
+          elevation: 6,
         ),
       ),
-      darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.indigo.shade800,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: const Color(0xFF1E1E1E),
+          selectedItemColor: Colors.indigo.shade200,
+          unselectedItemColor: Colors.grey.shade500,
+          showUnselectedLabels: true,
+          elevation: 10,
+        ),
         cardTheme: CardTheme(
-          elevation: 4,
+          elevation: 3,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
           ),
+          color: const Color(0xFF1F1F1F),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
             ),
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.indigo.shade300,
+          foregroundColor: Colors.black,
+          elevation: 6,
         ),
       ),
       themeMode: ThemeMode.system,
