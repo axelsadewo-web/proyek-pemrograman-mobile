@@ -2,11 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'models/daily_habit_model.dart';
 import 'screens/daily_habit_tracker_screen.dart';
 import 'screens/add_edit_habit_screen.dart';
 import 'screens/statistics_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/profile_screen.dart';
+import 'services/auth_service.dart';
+import 'services/localization_service.dart';
+import 'services/home_widget_service.dart';
 
 // ============================================================================
 // MAIN APP
@@ -15,14 +23,29 @@ import 'screens/statistics_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
   // Initialize Hive
   await Hive.initFlutter();
   await HabitStorageService.initializeBox();
 
-  // Request notification permissions
+  // Initialize Home Widget
+  await HomeWidget.setAppGroupId('group.habit_tracker_widget');
+
+  // Initialize Localization
+  await LocalizationService.initialize();
+
+  // Request permissions
   await _requestPermissions();
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    const ProviderScope(
+      child: LocalizedApp(
+        child: MyApp(),
+      ),
+    ),
+  );
 }
 
 Future<void> _requestPermissions() async {
@@ -34,14 +57,20 @@ Future<void> _requestPermissions() async {
     await Permission.scheduleExactAlarm.request();
   }
 
+  // Request storage permission for exports
+  await Permission.storage.request();
+
   debugPrint('Notification permission: $notificationStatus');
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch auth state to determine initial screen
+    final authState = ref.watch(authStateProvider);
+
     return MaterialApp(
       title: 'Habit Tracker Pro',
       theme: ThemeData(
@@ -80,11 +109,33 @@ class MyApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: const MainScreen(),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', 'US'),
+        Locale('id', 'ID'),
+      ],
+      home: authState.when(
+        data: (user) => user != null ? const MainScreen() : const LoginScreen(),
+        loading: () => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        error: (error, st) => Scaffold(
+          body: Center(
+            child: Text('Error: $error'),
+          ),
+        ),
+      ),
       routes: {
+        '/home': (context) => const MainScreen(),
+        '/login': (context) => const LoginScreen(),
         '/add-habit': (context) => const AddEditHabitScreen(),
         '/statistics': (context) => const StatisticsScreen(),
-        '/reminder-settings': (context) => const ReminderSettingsScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }
@@ -98,6 +149,69 @@ class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
 
   @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _screens = [
+    const DailyHabitTrackerScreen(),
+    const StatisticsScreen(),
+    const ProfileScreen(),
+    const SettingsScreen(),
+  ];
+
+  final List<String> _titles = [
+    'Habits',
+    'Statistics',
+    'Profile',
+    'Settings',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Handle widget tap when app is launched from widget
+    HomeWidgetService.handleWidgetTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Stats',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+}
   State<MainScreen> createState() => _MainScreenState();
 }
 
