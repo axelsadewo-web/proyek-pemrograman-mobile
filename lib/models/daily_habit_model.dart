@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -31,9 +30,8 @@ class DailyHabit {
     this.streak = 0,
     List<String>? historyDates,
     DateTime? createdAt,
-  }) :
-    historyDates = historyDates ?? [],
-    createdAt = createdAt ?? DateTime.now();
+  }) : historyDates = historyDates ?? [],
+       createdAt = createdAt ?? DateTime.now();
 
   /// Konversi ke Map untuk Hive
   Map<String, dynamic> toMap() {
@@ -159,9 +157,9 @@ class StreakService {
 
     int currentStreak = 0;
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final yesterday = DateFormat('yyyy-MM-dd').format(
-      DateTime.now().subtract(const Duration(days: 1)),
-    );
+    final yesterday = DateFormat(
+      'yyyy-MM-dd',
+    ).format(DateTime.now().subtract(const Duration(days: 1)));
 
     // Cek apakah hari ini atau kemarin ada di history
     final hasToday = uniqueDates.contains(today);
@@ -207,10 +205,7 @@ class StreakService {
     // Calculate new streak
     final newStreak = calculateStreak(updatedHistory);
 
-    return habit.copyWith(
-      streak: newStreak,
-      historyDates: updatedHistory,
-    );
+    return habit.copyWith(streak: newStreak, historyDates: updatedHistory);
   }
 
   /// Get streak statistics untuk semua habits
@@ -230,7 +225,9 @@ class StreakService {
     return {
       'totalStreaks': streaks.reduce((a, b) => a + b),
       'averageStreak': streaks.reduce((a, b) => a + b) / habits.length,
-      'longestStreak': streaks.isEmpty ? 0 : streaks.reduce((a, b) => a > b ? a : b),
+      'longestStreak': streaks.isEmpty
+          ? 0
+          : streaks.reduce((a, b) => a > b ? a : b),
       'activeStreaks': activeStreaks,
     };
   }
@@ -391,7 +388,6 @@ class StatisticsService {
   static Map<String, dynamic> getWeeklyStats(List<DailyHabit> habits) {
     final now = DateTime.now();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1)); // Monday
-    final endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
 
     final weekDates = <String>[];
     for (int i = 0; i < 7; i++) {
@@ -477,11 +473,8 @@ class StatisticsService {
     final activeHabits = habits.where((h) => h.streak > 0).length;
     final completedToday = habits.where((h) => h.isDoneToday).length;
 
-    final allHistoryDates = habits
-        .expand((habit) => habit.historyDates)
-        .toSet()
-        .toList()
-      ..sort();
+    final allHistoryDates =
+        habits.expand((habit) => habit.historyDates).toSet().toList()..sort();
 
     final totalCompletions = allHistoryDates.length;
 
@@ -490,9 +483,58 @@ class StatisticsService {
       'activeHabits': activeHabits,
       'completedToday': completedToday,
       'totalCompletions': totalCompletions,
-      'completionRateToday': totalHabits > 0 ? (completedToday / totalHabits * 100) : 0.0,
+      'completionRateToday': totalHabits > 0
+          ? (completedToday / totalHabits * 100)
+          : 0.0,
       ...streakStats,
     };
+  }
+}
+
+// ============================================================================
+// HIVE BOX INITIALIZATION & PROVIDER
+// ============================================================================
+
+/// Hive adapter untuk Hive persistence storage
+class HabitStorageService {
+  static const String boxName = 'daily_habits';
+
+  /// Initialize Hive box
+  static Future<Box<Map>> initializeBox() async {
+    if (!Hive.isBoxOpen(boxName)) {
+      return await Hive.openBox<Map>(boxName);
+    }
+    return Hive.box<Map>(boxName);
+  }
+
+  /// Get all habits from Hive
+  static Future<List<DailyHabit>> getAllHabits() async {
+    await initializeBox();
+    final box = Hive.box<Map>(boxName);
+    return box.values
+        .map((e) => DailyHabit.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// Save habit to Hive
+  static Future<void> saveHabit(DailyHabit habit) async {
+    await initializeBox();
+    final box = Hive.box<Map>(boxName);
+    await box.put(habit.id, habit.toMap());
+  }
+
+  /// Delete habit from Hive
+  static Future<void> deleteHabit(String habitId) async {
+    await initializeBox();
+    final box = Hive.box<Map>(boxName);
+    await box.delete(habitId);
+  }
+
+  /// Clear all habits
+  static Future<void> clearAllHabits() async {
+    await initializeBox();
+    final box = Hive.box<Map>(boxName);
+    await box.clear();
   }
 }
 
@@ -503,8 +545,8 @@ class StatisticsService {
 /// Provider untuk daily habits list dengan streak support
 final dailyHabitsProvider =
     StateNotifierProvider<DailyHabitsNotifier, AsyncValue<List<DailyHabit>>>(
-  (ref) => DailyHabitsNotifier(),
-);
+      (ref) => DailyHabitsNotifier(),
+    );
 
 /// StateNotifier untuk manage daily habits dengan streak
 class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
@@ -546,8 +588,6 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
   /// Toggle habit completion status dengan streak update
   Future<void> toggleHabitCompletion(String habitId) async {
     final currentState = state;
-    if (currentState is! AsyncValue<List<DailyHabit>>) return;
-
     final habits = currentState.value ?? [];
     final habitIndex = habits.indexWhere((h) => h.id == habitId);
 
@@ -565,10 +605,15 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
       final isCompleting = !habit.isDoneToday;
 
       // Update habit dengan streak calculation
-      final updatedHabit = StreakService.updateStreakForHabit(habit, isCompleting);
+      final updatedHabit = StreakService.updateStreakForHabit(
+        habit,
+        isCompleting,
+      );
       final finalHabit = updatedHabit.copyWith(
         isDoneToday: isCompleting,
-        lastCompletedDate: isCompleting ? today : updatedHabit.lastCompletedDate,
+        lastCompletedDate: isCompleting
+            ? today
+            : updatedHabit.lastCompletedDate,
       );
 
       // Update list
@@ -586,8 +631,6 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
   /// Add habit baru
   Future<void> addHabit(DailyHabit habit) async {
     final currentState = state;
-    if (currentState is! AsyncValue<List<DailyHabit>>) return;
-
     final habits = currentState.value ?? [];
     habits.add(habit);
 
@@ -598,8 +641,6 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
   /// Delete habit
   Future<void> deleteHabit(String habitId) async {
     final currentState = state;
-    if (currentState is! AsyncValue<List<DailyHabit>>) return;
-
     final habits = currentState.value ?? [];
     habits.removeWhere((h) => h.id == habitId);
 
@@ -655,50 +696,3 @@ final monthlyStatsProvider = Provider<Map<String, dynamic>>((ref) {
     error: (_, __) => {},
   );
 });
-
-// ============================================================================
-// HIVE BOX INITIALIZATION & PROVIDER
-// ============================================================================
-
-/// Hive adapter untuk Hive persisten storage
-class HabitStorageService {
-  static const String boxName = 'daily_habits';
-
-  /// Initialize Hive box
-  static Future<Box<Map>> initializeBox() async {
-    if (!Hive.isBoxOpen(boxName)) {
-      return await Hive.openBox<Map>(boxName);
-    }
-    return Hive.box<Map>(boxName);
-  }
-
-  /// Get all habits dari Hive
-  static Future<List<DailyHabit>> getAllHabits() async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    return box.values
-        .map((e) => DailyHabit.fromMap(Map<String, dynamic>.from(e)))
-        .toList();
-  }
-
-  /// Save habit ke Hive
-  static Future<void> saveHabit(DailyHabit habit) async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.put(habit.id, habit.toMap());
-  }
-
-  /// Delete habit dari Hive
-  static Future<void> deleteHabit(String habitId) async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.delete(habitId);
-  }
-
-  /// Clear all habits
-  static Future<void> clearAllHabits() async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.clear();
-  }
-}

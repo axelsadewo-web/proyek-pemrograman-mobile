@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'daily_habit_model.dart';
+import 'package:project_/models/daily_habit_model.dart';
 
 // ============================================================================
 // STATISTICS SCREEN
@@ -33,8 +33,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistik & Progress'),
@@ -53,10 +51,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildWeeklyTab(),
-          _buildMonthlyTab(),
-        ],
+        children: [_buildWeeklyTab(), _buildMonthlyTab()],
       ),
     );
   }
@@ -171,12 +166,15 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   /// Build individual stat card
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -194,10 +192,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
             const SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -210,9 +205,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget _buildWeeklySummary(int completed, int possible, double rate) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -220,9 +213,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
           children: [
             Text(
               'Ringkasan Mingguan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -239,7 +232,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
               minHeight: 8,
               backgroundColor: Colors.grey.shade200,
               valueColor: AlwaysStoppedAnimation<Color>(
-                rate >= 80 ? Colors.green : rate >= 60 ? Colors.orange : Colors.red,
+                rate >= 80
+                    ? Colors.green
+                    : rate >= 60
+                    ? Colors.orange
+                    : Colors.red,
               ),
             ),
           ],
@@ -252,9 +249,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget _buildMonthlySummary(int completed, int possible, double rate) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -262,9 +257,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
           children: [
             Text(
               'Ringkasan Bulanan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -281,7 +276,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
               minHeight: 8,
               backgroundColor: Colors.grey.shade200,
               valueColor: AlwaysStoppedAnimation<Color>(
-                rate >= 80 ? Colors.green : rate >= 60 ? Colors.orange : Colors.red,
+                rate >= 80
+                    ? Colors.green
+                    : rate >= 60
+                    ? Colors.orange
+                    : Colors.red,
               ),
             ),
           ],
@@ -296,25 +295,22 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
       ],
     );
   }
 
   /// Build weekly chart
-  Widget _buildWeeklyChart(Map<String, int> dailyCompleted, List<String> weekDates) {
+  Widget _buildWeeklyChart(
+    Map<String, int> dailyCompleted,
+    List<String> weekDates,
+  ) {
     final spots = <FlSpot>[];
     final dayLabels = <String>[];
 
@@ -331,9 +327,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -341,9 +335,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
           children: [
             Text(
               'Grafik Mingguan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -379,8 +373,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         },
                       ),
                     ),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                   ),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
@@ -392,7 +390,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                       dotData: FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.1),
                       ),
                     ),
                   ],
@@ -407,7 +407,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   /// Build monthly chart
-  Widget _buildMonthlyChart(Map<String, int> dailyCompleted, List<String> monthDates) {
+  Widget _buildMonthlyChart(
+    Map<String, int> dailyCompleted,
+    List<String> monthDates,
+  ) {
     final spots = <FlSpot>[];
 
     for (int i = 0; i < monthDates.length; i++) {
@@ -418,9 +421,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -428,9 +429,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
           children: [
             Text(
               'Grafik Bulanan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -463,8 +464,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         },
                       ),
                     ),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                   ),
                   borderData: FlBorderData(show: false),
                   barGroups: spots.map((spot) {
@@ -546,10 +551,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                 child: Text(
                   'Belum ada achievement\nMulai bangun streak Anda!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ),
             ),
@@ -561,9 +563,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
           children: [
             Text(
               '🏆 Achievement',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             ...achievements,
@@ -615,8 +617,8 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
                   Text(
                     'Notifikasi Harian',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -680,8 +682,8 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
                   Text(
                     '💪 Pesan Motivasi',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _buildMotivationalMessage(
@@ -709,12 +711,7 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
         children: [
           const Icon(Icons.lightbulb, color: Colors.amber, size: 20),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(message, style: const TextStyle(fontSize: 14))),
         ],
       ),
     );

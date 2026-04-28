@@ -1,271 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
-
-// ============================================================================
-// MODEL HABIT
-// ============================================================================
-
-/// Model Habit dengan tracking harian
-class DailyHabit {
-  String id;
-  String name;
-  String description;
-  String category;
-  String target; // 'Harian' atau 'Mingguan'
-  bool isDoneToday;
-  String? lastCompletedDate; // Format: yyyy-MM-dd
-  DateTime createdAt;
-
-  DailyHabit({
-    required this.id,
-    required this.name,
-    this.description = '',
-    required this.category,
-    required this.target,
-    this.isDoneToday = false,
-    this.lastCompletedDate,
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
-
-  /// Konversi ke Map untuk Hive
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'category': category,
-      'target': target,
-      'isDoneToday': isDoneToday,
-      'lastCompletedDate': lastCompletedDate,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
-
-  /// Create dari Map (Hive)
-  factory DailyHabit.fromMap(Map<String, dynamic> map) {
-    return DailyHabit(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      description: map['description'] ?? '',
-      category: map['category'] ?? 'Olahraga',
-      target: map['target'] ?? 'Harian',
-      isDoneToday: map['isDoneToday'] ?? false,
-      lastCompletedDate: map['lastCompletedDate'],
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
-          : DateTime.now(),
-    );
-  }
-
-  /// Copy with
-  DailyHabit copyWith({
-    String? id,
-    String? name,
-    String? description,
-    String? category,
-    String? target,
-    bool? isDoneToday,
-    String? lastCompletedDate,
-    DateTime? createdAt,
-  }) {
-    return DailyHabit(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      category: category ?? this.category,
-      target: target ?? this.target,
-      isDoneToday: isDoneToday ?? this.isDoneToday,
-      lastCompletedDate: lastCompletedDate ?? this.lastCompletedDate,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-
-  /// Cek apakah bisa dicentang hari ini (belum dilakukan hari ini)
-  bool canCheckTodayByDate() {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    return lastCompletedDate != today;
-  }
-
-  /// Get tanggal terakhir dalam format readable
-  String getLastCompletedDateFormatted() {
-    if (lastCompletedDate == null) {
-      return 'Belum pernah dilakukan';
-    }
-    try {
-      final date = DateFormat('yyyy-MM-dd').parse(lastCompletedDate!);
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      if (lastCompletedDate == today) {
-        return 'Hari ini';
-      }
-      return DateFormat('d MMM yyyy', 'id_ID').format(date);
-    } catch (e) {
-      return lastCompletedDate ?? 'Tidak diketahui';
-    }
-  }
-}
-
-// ============================================================================
-// HIVE BOX INITIALIZATION & PROVIDER
-// ============================================================================
-
-/// Hive adapter untuk Hive persisten storage
-class HabitStorageService {
-  static const String boxName = 'daily_habits';
-
-  /// Initialize Hive box
-  static Future<Box<Map>> initializeBox() async {
-    if (!Hive.isBoxOpen(boxName)) {
-      return await Hive.openBox<Map>(boxName);
-    }
-    return Hive.box<Map>(boxName);
-  }
-
-  /// Get all habits dari Hive
-  static Future<List<DailyHabit>> getAllHabits() async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    return box.values
-        .map((e) => DailyHabit.fromMap(Map<String, dynamic>.from(e)))
-        .toList();
-  }
-
-  /// Save habit ke Hive
-  static Future<void> saveHabit(DailyHabit habit) async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.put(habit.id, habit.toMap());
-  }
-
-  /// Delete habit dari Hive
-  static Future<void> deleteHabit(String habitId) async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.delete(habitId);
-  }
-
-  /// Clear all habits
-  static Future<void> clearAllHabits() async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.clear();
-  }
-}
-
-// ============================================================================
-// RIVERPOD PROVIDERS
-// ============================================================================
-
-/// Provider untuk daily habits list
-final dailyHabitsProvider =
-    StateNotifierProvider<DailyHabitsNotifier, AsyncValue<List<DailyHabit>>>(
-  (ref) => DailyHabitsNotifier(),
-);
-
-/// StateNotifier untuk manage daily habits
-class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
-  DailyHabitsNotifier() : super(const AsyncValue.loading()) {
-    _loadHabits();
-  }
-
-  /// Load habits dari Hive
-  Future<void> _loadHabits() async {
-    try {
-      final habits = await HabitStorageService.getAllHabits();
-      // Reset isDoneToday jika bukan hari yang sama
-      _resetDailyStatusIfNeeded(habits);
-      state = AsyncValue.data(habits);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  /// Reset isDoneToday jika tanggal berbeda
-  void _resetDailyStatusIfNeeded(List<DailyHabit> habits) {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    for (final habit in habits) {
-      if (habit.lastCompletedDate != today && habit.isDoneToday) {
-        habit.isDoneToday = false;
-      }
-    }
-  }
-
-  /// Toggle habit completion status
-  Future<void> toggleHabitCompletion(String habitId) async {
-    final currentState = state;
-    if (currentState is! AsyncValue<List<DailyHabit>>) return;
-
-    final habits = currentState.value ?? [];
-    final habitIndex = habits.indexWhere((h) => h.id == habitId);
-
-    if (habitIndex != -1) {
-      final habit = habits[habitIndex];
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      // Cek validasi: tidak boleh double checklist dalam 1 hari
-      if (habit.lastCompletedDate == today && habit.isDoneToday) {
-        // Sudah dilakukan hari ini, tidak bisa dicentang lagi
-        return;
-      }
-
-      // Update habit
-      final updatedHabit = habit.copyWith(
-        isDoneToday: !habit.isDoneToday,
-        lastCompletedDate: !habit.isDoneToday ? today : habit.lastCompletedDate,
-      );
-
-      // Update list
-      final updatedHabits = [...habits];
-      updatedHabits[habitIndex] = updatedHabit;
-
-      // Save ke Hive
-      await HabitStorageService.saveHabit(updatedHabit);
-
-      // Update state
-      state = AsyncValue.data(updatedHabits);
-    }
-  }
-
-  /// Add habit baru
-  Future<void> addHabit(DailyHabit habit) async {
-    final currentState = state;
-    if (currentState is! AsyncValue<List<DailyHabit>>) return;
-
-    final habits = currentState.value ?? [];
-    habits.add(habit);
-
-    await HabitStorageService.saveHabit(habit);
-    state = AsyncValue.data(habits);
-  }
-
-  /// Delete habit
-  Future<void> deleteHabit(String habitId) async {
-    final currentState = state;
-    if (currentState is! AsyncValue<List<DailyHabit>>) return;
-
-    final habits = currentState.value ?? [];
-    habits.removeWhere((h) => h.id == habitId);
-
-    await HabitStorageService.deleteHabit(habitId);
-    state = AsyncValue.data(habits);
-  }
-}
-
-/// Provider untuk hitung progress hari ini
-final dailyProgressProvider = Provider<Map<String, int>>((ref) {
-  final habitsAsync = ref.watch(dailyHabitsProvider);
-
-  return habitsAsync.when(
-    data: (habits) {
-      final completed = habits.where((h) => h.isDoneToday).length;
-      final total = habits.length;
-      return {'completed': completed, 'total': total};
-    },
-    loading: () => {'completed': 0, 'total': 0},
-    error: (_, __) => {'completed': 0, 'total': 0},
-  );
-});
+import 'package:project_/models/daily_habit_model.dart';
 
 // ============================================================================
 // DAILY HABIT TRACKER SCREEN
@@ -289,8 +24,7 @@ class _DailyHabitTrackerScreenState
 
   /// Initialize demo data jika belum ada
   Future<void> _initializeDemoData() async {
-    final habits =
-        await HabitStorageService.getAllHabits();
+    final habits = await HabitStorageService.getAllHabits();
     if (habits.isEmpty) {
       final demoHabits = [
         DailyHabit(
@@ -335,7 +69,7 @@ class _DailyHabitTrackerScreenState
       }
 
       if (mounted) {
-        ref.refresh(dailyHabitsProvider);
+        final _ = ref.refresh(dailyHabitsProvider);
       }
     }
   }
@@ -367,12 +101,8 @@ class _DailyHabitTrackerScreenState
             ],
           ),
         ),
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, st) => Center(
-          child: Text('Error: $error'),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, st) => Center(child: Text('Error: $error')),
       ),
     );
   }
@@ -388,10 +118,7 @@ class _DailyHabitTrackerScreenState
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.blue.shade400,
-            Colors.blue.shade600,
-          ],
+          colors: [Colors.blue.shade400, Colors.blue.shade600],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -413,9 +140,9 @@ class _DailyHabitTrackerScreenState
               Text(
                 'Progress Hari Ini',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -496,8 +223,8 @@ class _DailyHabitTrackerScreenState
     return GestureDetector(
       onTap: canCheck
           ? () => ref
-              .read(dailyHabitsProvider.notifier)
-              .toggleHabitCompletion(habit.id)
+                .read(dailyHabitsProvider.notifier)
+                .toggleHabitCompletion(habit.id)
           : null,
       child: Card(
         margin: const EdgeInsets.only(bottom: 12),
@@ -516,8 +243,10 @@ class _DailyHabitTrackerScreenState
             ),
           ),
           child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             title: Text(
               habit.name,
               style: TextStyle(
@@ -545,10 +274,7 @@ class _DailyHabitTrackerScreenState
                 const SizedBox(height: 4),
                 Text(
                   'Terakhir: ${habit.getLastCompletedDateFormatted()}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -574,16 +300,14 @@ class _DailyHabitTrackerScreenState
           value: habit.isDoneToday,
           onChanged: canCheck
               ? (_) => ref
-                  .read(dailyHabitsProvider.notifier)
-                  .toggleHabitCompletion(habit.id)
+                    .read(dailyHabitsProvider.notifier)
+                    .toggleHabitCompletion(habit.id)
               : null,
           fillColor: MaterialStateProperty.all(
             habit.isDoneToday ? Colors.green : Colors.transparent,
           ),
           checkColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
       ),
     );
@@ -605,17 +329,14 @@ class _DailyHabitTrackerScreenState
             const SizedBox(height: 16),
             Text(
               'Belum ada kebiasaan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 8),
             Text(
               'Buat kebiasaan baru untuk memulai',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
             ),
           ],
         ),
@@ -644,15 +365,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Daily Habit Tracker',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       darkTheme: ThemeData.dark(useMaterial3: true),
       themeMode: ThemeMode.system,
-      home: const ProviderScope(
-        child: DailyHabitTrackerScreen(),
-      ),
+      home: const ProviderScope(child: DailyHabitTrackerScreen()),
     );
   }
 }

@@ -68,10 +68,7 @@ class Habit {
 class AddEditHabitScreen extends StatefulWidget {
   final Habit? habit; // null jika mode Add, non-null jika mode Edit
 
-  const AddEditHabitScreen({
-    Key? key,
-    this.habit,
-  }) : super(key: key);
+  const AddEditHabitScreen({Key? key, this.habit}) : super(key: key);
 
   @override
   State<AddEditHabitScreen> createState() => _AddEditHabitScreenState();
@@ -115,8 +112,9 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
   void _initializeForm() {
     if (widget.habit != null) {
       _nameController = TextEditingController(text: widget.habit!.name);
-      _descriptionController =
-          TextEditingController(text: widget.habit!.description);
+      _descriptionController = TextEditingController(
+        text: widget.habit!.description,
+      );
       _selectedCategory = widget.habit!.category;
       _selectedTarget = widget.habit!.target;
     } else {
@@ -150,9 +148,11 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
       // Show success snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.habit != null
-              ? 'Kebiasaan berhasil diperbarui!'
-              : 'Kebiasaan berhasil ditambahkan!'),
+          content: Text(
+            widget.habit != null
+                ? 'Kebiasaan berhasil diperbarui!'
+                : 'Kebiasaan berhasil ditambahkan!',
+          ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
@@ -170,11 +170,11 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.habit != null ? 'Edit Kebiasaan' : 'Tambah Kebiasaan'),
+        title: Text(
+          widget.habit != null ? 'Edit Kebiasaan' : 'Tambah Kebiasaan',
+        ),
         elevation: 0,
         centerTitle: true,
       ),
@@ -222,9 +222,9 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 
@@ -235,9 +235,7 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
       decoration: InputDecoration(
         hintText: 'Contoh: Berlari pagi',
         prefixIcon: const Icon(Icons.label),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -263,9 +261,7 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
       decoration: InputDecoration(
         hintText: 'Tulis deskripsi kebiasaan (opsional)',
         prefixIcon: const Icon(Icons.description),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -281,9 +277,7 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.3),
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButton<String>(
@@ -295,10 +289,7 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
             value: category,
             child: Row(
               children: [
-                Icon(
-                  _categoryIcons[category],
-                  size: 20,
-                ),
+                Icon(_categoryIcons[category], size: 20),
                 const SizedBox(width: 12),
                 Text(category),
               ],
@@ -320,9 +311,7 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
   Widget _buildTargetRadioButtons() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.3),
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -365,10 +354,7 @@ class _AddEditHabitScreenState extends State<AddEditHabitScreen> {
             const SizedBox(width: 8),
             Text(
               widget.habit != null ? 'Perbarui Kebiasaan' : 'Simpan Kebiasaan',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ],
         ),
