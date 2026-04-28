@@ -40,6 +40,18 @@ dependencies:
   sqflite: ^2.3.0
   path: ^1.8.3
 
+  # State Management & Storage
+  flutter_riverpod: ^2.4.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Notifications & Charts
+  flutter_local_notifications: ^17.0.0
+  fl_chart: ^0.66.1
+
+  # Permissions
+  permission_handler: ^11.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
