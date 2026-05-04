@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
@@ -575,7 +576,31 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
       _recalculateStreaks(habits);
       state = AsyncValue.data(habits);
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (kIsWeb) {
+        final mockHabits = [
+          DailyHabit(
+            id: 'demo1',
+            name: 'Web Demo: Berlari Pagi',
+            description: '30 menit berlari setiap pagi',
+            category: 'Olahraga',
+            target: 'Harian',
+            streak: 7,
+          ),
+          DailyHabit(
+            id: 'demo2',
+            name: 'Web Demo: Baca Buku',
+            description: '20 halaman setiap hari',
+            category: 'Belajar',
+            target: 'Harian',
+            isDoneToday: true,
+            streak: 12,
+          ),
+        ];
+        state = AsyncValue.data(mockHabits);
+        print('Web mock habits loaded in DailyHabitsNotifier');
+      } else {
+        state = AsyncValue.error(e, st);
+      }
     }
   }
 

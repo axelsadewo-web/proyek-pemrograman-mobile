@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/daily_habit_model.dart';
@@ -19,7 +20,33 @@ class HabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
       final habits = await SqliteHelper.instance.getAllHabits();
       state = AsyncValue.data(habits);
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      // Fallback to mock data on web/SQLite error
+      if (kIsWeb) {
+        final mockHabits = [
+          DailyHabit(
+            id: 'mock1',
+            name: 'Demo Habit 1 (Web)',
+            description: 'This is mock for web testing',
+            category: 'Demo',
+            target: 'Harian',
+            isDoneToday: false,
+            streak: 3,
+          ),
+          DailyHabit(
+            id: 'mock2',
+            name: 'Demo Habit 2 (Web)',
+            description: 'SQLite works on Android/iOS',
+            category: 'Demo',
+            target: 'Harian',
+            isDoneToday: true,
+            streak: 5,
+          ),
+        ];
+        state = AsyncValue.data(mockHabits);
+        print('Web mock data loaded: SQLite error $e');
+      } else {
+        state = AsyncValue.error(e, st);
+      }
     }
   }
 

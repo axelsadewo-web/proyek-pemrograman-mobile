@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/daily_habit_model.dart';
 import '../db/sqlite_helper.dart';
@@ -11,7 +12,23 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Future<void> loadLocalHabits() async {
-    habits = await SqliteHelper.instance.getAllHabits();
+    try {
+      habits = await SqliteHelper.instance.getAllHabits();
+    } catch (e) {
+      if (kIsWeb) {
+        habits = [
+          DailyHabit(
+            id: 'web1',
+            name: 'Web Mock Habit',
+            category: 'Demo',
+            target: 'Harian',
+          ),
+        ];
+        print('Loaded web mock habits: $e');
+      } else {
+        rethrow;
+      }
+    }
     notifyListeners();
   }
 

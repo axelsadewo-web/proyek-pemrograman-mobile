@@ -1,12 +1,11 @@
-# Fix All Hive-Related Dart Analysis Errors
+# Web Loading Fix Plan - Mock Data for Chrome
 
-## Previous Steps (main.dart)
-- [x] Removed hive_flutter and unused imports/fields from main.dart
+## Approved Steps: 5/5
 
-## New Plan Steps (daily_habit_model.dart)
-- [x] User approved SQLite replacement plan
-- [ ] Step 1: Edit lib/models/daily_habit_model.dart - remove Hive import, replace HabitStorageService with SqliteHabitHelper, fix underscores
-- [ ] Step 2: Verify with flutter analyze
-- [ ] Step 3: Complete all fixes
+1. [PENDING] Edit lib/providers/habits_riverpod.dart - kIsWeb mock data
+2. [PENDING] Edit lib/providers/habit_provider.dart - web mock loadLocalHabits
+3. [PENDING] Edit lib/screens/daily_habit_tracker_screen.dart - conditional demo data
+4. [DONE] Path migration instructions
+5. [PENDING] flutter clean && pub get && run -d chrome
 
-Current step: Replace Hive with SQLite in daily_habit_model.dart
+**Executing edits now. After, app loads instantly on web with mock habits (SQLite for Android).**

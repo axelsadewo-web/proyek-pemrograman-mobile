@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'screens/daily_habit_tracker_screen.dart';
@@ -22,6 +24,10 @@ import 'services/home_widget_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  if (kIsWeb) {
+    databaseFactory = databaseFactoryFfiWeb;
+  }
+
   try {
     // Initialize Firebase
     await Firebase.initializeApp();
@@ -29,13 +35,15 @@ void main() async {
     debugPrint('Firebase initialization error: $e');
   }
 
-  // SQLite auto-initialized on first use - no explicit init needed
+  // SQLite auto-initialized on first use - web factory is configured above.
 
-  try {
-    // Initialize Home Widget
-    await HomeWidget.setAppGroupId('group.habit_tracker_widget');
-  } catch (e) {
-    debugPrint('Home Widget initialization error: $e');
+  if (!kIsWeb) {
+    try {
+      // Initialize Home Widget (Android/iOS only)
+      await HomeWidget.setAppGroupId('group.habit_tracker_widget');
+    } catch (e) {
+      debugPrint('Home Widget initialization error: $e');
+    }
   }
 
   try {
@@ -45,10 +53,11 @@ void main() async {
     debugPrint('Localization initialization error: $e');
   }
 
-  // Request permissions
-  await _requestPermissions();
+  if (!kIsWeb) {
+    await _requestPermissions();
+  }
 
-  runApp(const ProviderScope(child: LocalizedApp(child: MyApp())));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 Future<void> _requestPermissions() async {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_habit_model.dart';
@@ -25,53 +26,59 @@ class _DailyHabitTrackerScreenState
 
   /// Initialize demo data jika belum ada
   Future<void> _initializeDemoData() async {
-    final count = await SqliteHelper.instance.getHabitsCount();
-    if (count == 0) {
-      final demoHabits = [
-        DailyHabit(
-          id: '1',
-          name: 'Berlari Pagi',
-          description: '30 menit berlari',
-          category: 'Olahraga',
-          target: 'Harian',
-        ),
-        DailyHabit(
-          id: '2',
-          name: 'Baca Buku',
-          description: 'Membaca minimal 20 halaman',
-          category: 'Belajar',
-          target: 'Harian',
-        ),
-        DailyHabit(
-          id: '3',
-          name: 'Minum Air',
-          description: 'Minum 8 gelas air',
-          category: 'Kesehatan',
-          target: 'Harian',
-        ),
-        DailyHabit(
-          id: '4',
-          name: 'Meditasi',
-          description: '10 menit meditasi pagi',
-          category: 'Spiritual',
-          target: 'Harian',
-        ),
-        DailyHabit(
-          id: '5',
-          name: 'Review Kode',
-          description: 'Review project Flutter',
-          category: 'Produktivitas',
-          target: 'Harian',
-        ),
-      ];
+    if (kIsWeb) return; // Skip SQLite demo on web
 
-      for (final habit in demoHabits) {
-        await SqliteHelper.instance.insertHabit(habit);
-      }
+    try {
+      final count = await SqliteHelper.instance.getHabitsCount();
+      if (count == 0) {
+        final demoHabits = [
+          DailyHabit(
+            id: '1',
+            name: 'Berlari Pagi',
+            description: '30 menit berlari',
+            category: 'Olahraga',
+            target: 'Harian',
+          ),
+          DailyHabit(
+            id: '2',
+            name: 'Baca Buku',
+            description: 'Membaca minimal 20 halaman',
+            category: 'Belajar',
+            target: 'Harian',
+          ),
+          DailyHabit(
+            id: '3',
+            name: 'Minum Air',
+            description: 'Minum 8 gelas air',
+            category: 'Kesehatan',
+            target: 'Harian',
+          ),
+          DailyHabit(
+            id: '4',
+            name: 'Meditasi',
+            description: '10 menit meditasi pagi',
+            category: 'Spiritual',
+            target: 'Harian',
+          ),
+          DailyHabit(
+            id: '5',
+            name: 'Review Kode',
+            description: 'Review project Flutter',
+            category: 'Produktivitas',
+            target: 'Harian',
+          ),
+        ];
 
-      if (mounted) {
-        ref.read(dailyHabitsProvider.notifier).loadHabits();
+        for (final habit in demoHabits) {
+          await SqliteHelper.instance.insertHabit(habit);
+        }
+
+        if (mounted) {
+          ref.read(dailyHabitsProvider.notifier).loadHabits();
+        }
       }
+    } catch (e) {
+      debugPrint('Demo data init error: $e');
     }
   }
 
@@ -125,8 +132,8 @@ class _DailyHabitTrackerScreenState
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, st) {
-          debugPrint('DailyHabits Error: $error');
-          debugPrint('Stack Trace: $st');
+          print('DailyHabits Error: $error');
+          print('Stack Trace: $st');
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Center(

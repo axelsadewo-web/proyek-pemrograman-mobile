@@ -38,7 +38,9 @@ dependencies:
   http: ^1.1.0
   intl: ^0.20.2
   sqflite: ^2.3.0
+  sqflite_common_ffi_web: ^0.4.0
   path: ^1.8.3
+
 
   # State Management & Storage
   flutter_riverpod: ^2.4.0
