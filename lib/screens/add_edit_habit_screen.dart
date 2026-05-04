@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_habit_model.dart';
-import '../providers/habits_riverpod.dart';
 
 class AddEditHabitScreen extends ConsumerStatefulWidget {
   final DailyHabit? habit;
@@ -80,7 +79,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         target: _selectedTarget,
       );
 
-      await ref.read(habitsProvider.notifier).addHabit(habit);
+      await ref.read(dailyHabitsProvider.notifier).addHabit(habit);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

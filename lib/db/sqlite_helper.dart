@@ -25,31 +25,49 @@ class SqliteHelper {
       version: 2,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
+      onOpen: _onOpen,
     );
   }
 
-  Future _createDB(Database db, int version) async {
+  Future<void> _onOpen(Database db) async {
     await db.execute('''
-      CREATE TABLE $_habitsTable (
+      CREATE TABLE IF NOT EXISTS $_habitsTable (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
         category TEXT NOT NULL,
         target TEXT NOT NULL,
-        is_done_today INTEGER DEFAULT 0,
+        is_done_today INTEGER NOT NULL DEFAULT 0,
         last_completed_date TEXT,
-        streak INTEGER DEFAULT 0,
-        history_dates TEXT,
+        streak INTEGER NOT NULL DEFAULT 0,
+        history_dates TEXT NOT NULL DEFAULT '[]',
         created_at TEXT NOT NULL
       )
     ''');
   }
 
-  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+  Future<void> _createDB(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_habitsTable (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        category TEXT NOT NULL,
+        target TEXT NOT NULL,
+        is_done_today INTEGER NOT NULL DEFAULT 0,
+        last_completed_date TEXT,
+        streak INTEGER NOT NULL DEFAULT 0,
+        history_dates TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Drop old habits table if exists, create new daily_habits table
+      // Drop old habits table if exists, then create the current daily_habits schema
       await db.execute('DROP TABLE IF EXISTS habits');
-      await _createDB(db, 2);
+      await _createDB(db, newVersion);
     }
   }
 

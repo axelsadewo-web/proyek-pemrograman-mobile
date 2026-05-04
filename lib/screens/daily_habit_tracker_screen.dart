@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_habit_model.dart';
-import '../providers/habits_riverpod.dart';
 import '../db/sqlite_helper.dart';
 
 // ============================================================================
@@ -71,15 +70,15 @@ class _DailyHabitTrackerScreenState
       }
 
       if (mounted) {
-        ref.read(habitsProvider.notifier).loadHabits();
+        ref.read(dailyHabitsProvider.notifier).loadHabits();
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final habitsAsync = ref.watch(habitsProvider);
-    final progress = ref.watch(progressProvider);
+    final habitsAsync = ref.watch(dailyHabitsProvider);
+    final progress = ref.watch(dailyProgressProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -104,29 +103,23 @@ class _DailyHabitTrackerScreenState
       body: habitsAsync.when(
         data: (habits) => RefreshIndicator(
           onRefresh: () async {
-            ref.read(habitsProvider.notifier).loadHabits();
+            await ref.read(dailyHabitsProvider.notifier).loadHabits();
             await Future.delayed(const Duration(milliseconds: 200));
           },
-          child: RefreshIndicator(
-            onRefresh: () async {
-              ref.read(habitsProvider.notifier).loadHabits();
-              await Future.delayed(const Duration(milliseconds: 200));
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  // Progress Section
-                  _buildProgressSection(progress),
-                  const SizedBox(height: 16),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                // Progress Section
+                _buildProgressSection(progress),
+                const SizedBox(height: 16),
 
-                  // Habits List
-                  if (habits.isEmpty)
-                    _buildEmptyState()
-                  else
-                    _buildHabitsList(habits),
-                ],
-              ),
+                // Habits List
+                if (habits.isEmpty)
+                  _buildEmptyState()
+                else
+                  _buildHabitsList(habits),
+              ],
             ),
           ),
         ),
@@ -165,7 +158,7 @@ class _DailyHabitTrackerScreenState
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
-                        ref.read(habitsProvider.notifier).loadHabits();
+                        ref.read(dailyHabitsProvider.notifier).loadHabits();
                       },
                       child: const Text('Coba Lagi'),
                     ),
@@ -326,7 +319,9 @@ class _DailyHabitTrackerScreenState
 
     return GestureDetector(
       onTap: canCheck
-          ? () => ref.read(habitsProvider.notifier).toggleHabit(habit.id)
+          ? () => ref
+                .read(dailyHabitsProvider.notifier)
+                .toggleHabitCompletion(habit.id)
           : null,
       child: Card(
         margin: const EdgeInsets.only(bottom: 14),
@@ -407,7 +402,9 @@ class _DailyHabitTrackerScreenState
         child: Checkbox(
           value: habit.isDoneToday,
           onChanged: canCheck
-              ? (_) => ref.read(habitsProvider.notifier).toggleHabit(habit.id)
+              ? (_) => ref
+                    .read(dailyHabitsProvider.notifier)
+                    .toggleHabitCompletion(habit.id)
               : null,
           fillColor: WidgetStateProperty.all(
             habit.isDoneToday ? Colors.green : Colors.transparent,

@@ -578,6 +578,9 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
     }
   }
 
+  /// Public load habits method for screens
+  Future<void> loadHabits() async => _loadHabits();
+
   /// Reset isDoneToday jika tanggal berbeda
   void _resetDailyStatusIfNeeded(List<DailyHabit> habits) {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
