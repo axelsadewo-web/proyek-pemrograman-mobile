@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
 import '../db/sqlite_helper.dart';
+import '../services/api_services.dart';
 
 // ============================================================================
 // UPDATED MODEL HABIT WITH STREAK & HISTORY
@@ -708,4 +709,9 @@ final monthlyStatsProvider = Provider<Map<String, dynamic>>((ref) {
     loading: () => {},
     error: (_, __) => {},
   );
+});
+
+/// Provider untuk public API habits
+final apiHabitsProvider = FutureProvider<List<dynamic>>((ref) async {
+  return ApiService.fetchHabits();
 });

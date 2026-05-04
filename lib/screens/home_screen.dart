@@ -29,6 +29,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final habitsAsync = ref.watch(dailyHabitsProvider);
     final progress = ref.watch(dailyProgressProvider);
 
+    final apiHabitsAsync = ref.watch(apiHabitsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Habit Tracker"),
@@ -38,8 +40,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.cloud_download),
             onPressed: () {
+              ref.refresh(apiHabitsProvider);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Feature coming soon!')),
+                const SnackBar(content: Text('Fetching public API data...')),
               );
             },
             tooltip: 'Sync habits',
@@ -48,6 +51,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Public API Habits',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                apiHabitsAsync.when(
+                  data: (apiHabits) {
+                    if (apiHabits.isEmpty) {
+                      return const Text('No public habits found.');
+                    }
+                    return SizedBox(
+                      height: 120,
+                      child: ListView.builder(
+                        itemCount: apiHabits.length,
+                        itemBuilder: (context, index) {
+                          final habit = apiHabits[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              '${index + 1}. ${habit['title'] ?? 'Untitled'}',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, stack) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text('Public API error: $error'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
           // Streak Header
           Container(
             padding: const EdgeInsets.all(16),
