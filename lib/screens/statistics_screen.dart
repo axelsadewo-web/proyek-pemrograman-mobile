@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:project_/models/daily_habit_model.dart';
+import '../models/daily_habit_model.dart';
 
 // ============================================================================
 // STATISTICS SCREEN
 // ============================================================================
 
 class StatisticsScreen extends ConsumerStatefulWidget {
-  const StatisticsScreen({Key? key}) : super(key: key);
+  const StatisticsScreen({super.key});
 
   @override
   ConsumerState<StatisticsScreen> createState() => _StatisticsScreenState();
@@ -583,7 +583,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 // ============================================================================
 
 class ReminderSettingsScreen extends StatefulWidget {
-  const ReminderSettingsScreen({Key? key}) : super(key: key);
+  const ReminderSettingsScreen({super.key});
 
   @override
   State<ReminderSettingsScreen> createState() => _ReminderSettingsScreenState();

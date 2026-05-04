@@ -31,8 +31,8 @@ class ExportService {
           'Total Completions',
           'Current Streak',
           'Longest Streak',
-          'Completion Dates'
-        ]
+          'Completion Dates',
+        ],
       ];
 
       // Add habit data
@@ -58,7 +58,8 @@ class ExportService {
 
       // Get directory for saving file
       final directory = await _getExportDirectory();
-      final fileName = 'habits_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final fileName =
+          'habits_export_${DateTime.now().millisecondsSinceEpoch}.csv';
       final filePath = '${directory.path}/$fileName';
 
       // Write file
@@ -66,10 +67,7 @@ class ExportService {
       await file.writeAsString(csvString);
 
       // Share file
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text: 'Habit Tracker Export',
-      );
+      await Share.shareXFiles([XFile(filePath)], text: 'Habit Tracker Export');
     } catch (e) {
       throw 'Failed to export CSV: $e';
     }
@@ -93,7 +91,10 @@ class ExportService {
         ['Total Habits', stats['totalHabits'].toString()],
         ['Active Habits', stats['activeHabits'].toString()],
         ['Total Completions', stats['totalCompletions'].toString()],
-        ['Average Completions per Day', stats['avgCompletionsPerDay'].toStringAsFixed(2)],
+        [
+          'Average Completions per Day',
+          stats['avgCompletionsPerDay'].toStringAsFixed(2),
+        ],
         ['Longest Streak', stats['longestStreak'].toString()],
         ['Current Streak', stats['currentStreak'].toString()],
         ['Most Productive Day', stats['mostProductiveDay']],
@@ -106,7 +107,8 @@ class ExportService {
 
       // Get directory for saving file
       final directory = await _getExportDirectory();
-      final fileName = 'statistics_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final fileName =
+          'statistics_export_${DateTime.now().millisecondsSinceEpoch}.csv';
       final filePath = '${directory.path}/$fileName';
 
       // Write file
@@ -114,10 +116,9 @@ class ExportService {
       await file.writeAsString(csvString);
 
       // Share file
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text: 'Habit Tracker Statistics',
-      );
+      await Share.shareXFiles([
+        XFile(filePath),
+      ], text: 'Habit Tracker Statistics');
     } catch (e) {
       throw 'Failed to export statistics: $e';
     }
@@ -147,7 +148,8 @@ class ExportService {
       int currentStreak = 0;
       DateTime currentDate = startDate;
 
-      while (currentDate.isBefore(endDate) || currentDate.isAtSameMomentAs(endDate)) {
+      while (currentDate.isBefore(endDate) ||
+          currentDate.isAtSameMomentAs(endDate)) {
         final dateString = _formatDate(currentDate);
         final isCompleted = completions.contains(dateString);
 
@@ -171,7 +173,8 @@ class ExportService {
 
       // Get directory for saving file
       final directory = await _getExportDirectory();
-      final fileName = '${habitName.replaceAll(' ', '_')}_progress_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final fileName =
+          '${habitName.replaceAll(' ', '_')}_progress_${DateTime.now().millisecondsSinceEpoch}.csv';
       final filePath = '${directory.path}/$fileName';
 
       // Write file
@@ -179,10 +182,9 @@ class ExportService {
       await file.writeAsString(csvString);
 
       // Share file
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text: 'Habit Progress: $habitName',
-      );
+      await Share.shareXFiles([
+        XFile(filePath),
+      ], text: 'Habit Progress: $habitName');
     } catch (e) {
       throw 'Failed to export habit progress: $e';
     }
@@ -254,7 +256,9 @@ class ExportService {
       if (currentDate.difference(prevDate).inDays == 1) {
         currentStreak++;
       } else {
-        longestStreak = longestStreak > currentStreak ? longestStreak : currentStreak;
+        longestStreak = longestStreak > currentStreak
+            ? longestStreak
+            : currentStreak;
         currentStreak = 1;
       }
     }
@@ -265,7 +269,10 @@ class ExportService {
   /// Calculate comprehensive statistics
   static Map<String, dynamic> _calculateStatistics(List<dynamic> habits) {
     int totalHabits = habits.length;
-    int activeHabits = habits.where((h) => (h.completions?.length ?? 0) > 0).length;
+    int activeHabits = habits
+        .where((h) => (h.completions?.length ?? 0) > 0)
+        .length
+        .toInt();
     int totalCompletions = 0;
     int longestStreak = 0;
     int currentStreak = 0;
@@ -274,13 +281,17 @@ class ExportService {
 
     for (final habit in habits) {
       final completions = habit.completions ?? [];
-      totalCompletions += completions.length;
+      totalCompletions += (completions.length as num).toInt();
 
       final habitLongestStreak = _calculateLongestStreak(completions);
       final habitCurrentStreak = _calculateCurrentStreak(completions);
 
-      longestStreak = longestStreak > habitLongestStreak ? longestStreak : habitLongestStreak;
-      currentStreak = currentStreak > habitCurrentStreak ? currentStreak : habitCurrentStreak;
+      longestStreak = longestStreak > habitLongestStreak
+          ? longestStreak
+          : habitLongestStreak;
+      currentStreak = currentStreak > habitCurrentStreak
+          ? currentStreak
+          : habitCurrentStreak;
 
       // Count completions per day
       for (final date in completions) {
@@ -301,10 +312,14 @@ class ExportService {
     });
 
     // Calculate average completions per day
-    double avgCompletionsPerDay = totalActiveDays > 0 ? totalCompletions / totalActiveDays : 0;
+    double avgCompletionsPerDay = totalActiveDays > 0
+        ? totalCompletions / totalActiveDays
+        : 0;
 
     // Calculate completion rate (assuming 90 days period)
-    double completionRate = totalHabits > 0 ? (totalCompletions / (totalHabits * 90)) * 100 : 0;
+    double completionRate = totalHabits > 0
+        ? (totalCompletions / (totalHabits * 90)) * 100
+        : 0;
 
     return {
       'totalHabits': totalHabits,

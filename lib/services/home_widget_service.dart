@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'services/gamification_service.dart';
+import 'gamification_service.dart';
 
 // ============================================================================
 // HOME WIDGET SERVICE
@@ -33,10 +33,22 @@ class HomeWidgetService {
       }
 
       // Update widget data
-      await HomeWidget.saveWidgetData<String>(_habitsCountKey, habits.length.toString());
-      await HomeWidget.saveWidgetData<String>(_completedTodayKey, completedToday.toString());
-      await HomeWidget.saveWidgetData<String>(_currentStreakKey, stats['longestStreak'].toString());
-      await HomeWidget.saveWidgetData<String>(_levelKey, stats['currentLevel'].toString());
+      await HomeWidget.saveWidgetData<String>(
+        _habitsCountKey,
+        habits.length.toString(),
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _completedTodayKey,
+        completedToday.toString(),
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _currentStreakKey,
+        stats['longestStreak'].toString(),
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _levelKey,
+        stats['currentLevel'].toString(),
+      );
 
       // Update widget
       await HomeWidget.updateWidget(
@@ -67,9 +79,12 @@ class HomeWidgetService {
     try {
       await HomeWidget.setAppGroupId(_appGroupId);
 
-      final habitsCount = await HomeWidget.getWidgetData<String>(_habitsCountKey) ?? '0';
-      final completedToday = await HomeWidget.getWidgetData<String>(_completedTodayKey) ?? '0';
-      final currentStreak = await HomeWidget.getWidgetData<String>(_currentStreakKey) ?? '0';
+      final habitsCount =
+          await HomeWidget.getWidgetData<String>(_habitsCountKey) ?? '0';
+      final completedToday =
+          await HomeWidget.getWidgetData<String>(_completedTodayKey) ?? '0';
+      final currentStreak =
+          await HomeWidget.getWidgetData<String>(_currentStreakKey) ?? '0';
       final level = await HomeWidget.getWidgetData<String>(_levelKey) ?? '1';
 
       return {
@@ -305,7 +320,7 @@ const String androidWidgetBackground = '''
 
 /// Widget untuk preview home widget di dalam app
 class HomeWidgetPreview extends ConsumerWidget {
-  const HomeWidgetPreview({Key? key}) : super(key: key);
+  const HomeWidgetPreview({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -313,9 +328,7 @@ class HomeWidgetPreview extends ConsumerWidget {
 
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -378,10 +391,7 @@ class HomeWidgetPreview extends ConsumerWidget {
         const SizedBox(height: 16),
         const Text(
           'Tap to open app',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.white70, fontSize: 12),
         ),
       ],
     );
@@ -400,10 +410,7 @@ class HomeWidgetPreview extends ConsumerWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
       ],
     );

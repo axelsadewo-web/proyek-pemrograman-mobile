@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ============================================================================
 // FIREBASE AUTH SERVICE
@@ -83,10 +84,7 @@ class AuthService {
   }
 
   /// Update user profile
-  Future<void> updateProfile({
-    String? name,
-    String? photoURL,
-  }) async {
+  Future<void> updateProfile({String? name, String? photoURL}) async {
     try {
       final user = _auth.currentUser;
       if (user == null) throw 'User tidak ditemukan';
@@ -244,7 +242,10 @@ class FirestoreService {
   }
 
   /// Update user stats di Firestore
-  Future<void> updateUserStats(String userId, Map<String, dynamic> stats) async {
+  Future<void> updateUserStats(
+    String userId,
+    Map<String, dynamic> stats,
+  ) async {
     try {
       await _firestore.collection('users').doc(userId).update({
         ...stats,
@@ -327,7 +328,7 @@ final firestoreServiceProvider = Provider<FirestoreService>((ref) {
 
 /// Login Screen
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -359,11 +360,7 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(
-                  Icons.track_changes,
-                  size: 80,
-                  color: Colors.blue,
-                ),
+                const Icon(Icons.track_changes, size: 80, color: Colors.blue),
                 const SizedBox(height: 24),
                 const Text(
                   'Habit Tracker Pro',
@@ -377,10 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'Login untuk melanjutkan',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
@@ -414,7 +408,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -448,10 +444,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator()
-                      : const Text(
-                          'Login',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                      : const Text('Login', style: TextStyle(fontSize: 16)),
                 ),
                 const SizedBox(height: 16),
 
@@ -501,10 +494,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -540,10 +530,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
     }
   }
@@ -551,7 +538,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
 /// Register Screen
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -579,10 +566,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Daftar Akun'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Daftar Akun'), elevation: 0),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -591,11 +575,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(
-                  Icons.person_add,
-                  size: 80,
-                  color: Colors.blue,
-                ),
+                const Icon(Icons.person_add, size: 80, color: Colors.blue),
                 const SizedBox(height: 24),
                 const Text(
                   'Buat Akun Baru',
@@ -657,7 +637,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -688,7 +670,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                        _obscureConfirmPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -722,10 +706,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator()
-                      : const Text(
-                          'Daftar',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                      : const Text('Daftar', style: TextStyle(fontSize: 16)),
                 ),
                 const SizedBox(height: 16),
 
@@ -772,10 +753,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {

@@ -75,11 +75,13 @@ class GamificationService {
     int totalXP = 0;
     for (final habit in habits) {
       // XP dari completion history
-      totalXP += habit.historyDates.length * XP_PER_HABIT;
+      totalXP += ((habit.historyDates.length as num) * (XP_PER_HABIT as num))
+          .toInt();
 
       // Bonus XP dari streak
-      if (habit.streak >= 7) totalXP += habit.streak * 2; // Bonus streak
-      if (habit.streak >= 30) totalXP += habit.streak * 5; // Bonus monthly
+      final streak = (habit.streak as num).toInt();
+      if (streak >= 7) totalXP += (streak * 2).toInt(); // Bonus streak
+      if (streak >= 30) totalXP += (streak * 5).toInt(); // Bonus monthly
     }
     return totalXP;
   }
@@ -157,7 +159,9 @@ class MotivationalQuotesService {
   /// Get quote harian berdasarkan tanggal
   static Map<String, String> getDailyQuote() {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final dayOfYear = DateTime.now()
+        .difference(DateTime(DateTime.now().year, 1, 1))
+        .inDays;
 
     // Gunakan dayOfYear sebagai seed untuk konsistensi harian
     final random = Random(dayOfYear);
@@ -217,7 +221,7 @@ class MotivationalQuotesService {
 /// Service untuk mengelola profile user dan gamifikasi stats
 class ProfileService {
   static Map<String, dynamic> calculateProfileStats(List<dynamic> habits) {
-    int totalXP = GamificationService.calculateTotalXP(habits);
+    int totalXP = GamificationService.calculateTotalXP(habits).toInt();
     int totalCompleted = 0;
     int longestStreak = 0;
     int activeStreaks = 0;
@@ -226,23 +230,31 @@ class ProfileService {
     final allHistoryDates = <String>{};
 
     for (final habit in habits) {
-      totalCompleted += habit.historyDates.length;
-      longestStreak = habit.streak > longestStreak ? habit.streak : longestStreak;
+      totalCompleted += (habit.historyDates.length as num).toInt();
+      longestStreak = habit.streak > longestStreak
+          ? (habit.streak as num).toInt()
+          : longestStreak;
       if (habit.streak > 0) activeStreaks++;
       allHistoryDates.addAll(habit.historyDates);
     }
 
-    totalActiveDays = allHistoryDates.length;
+    totalActiveDays = (allHistoryDates.length as num).toInt();
 
     final levelProgress = GamificationService.getLevelProgress(totalXP);
     final streakBadges = GamificationService.getStreakBadges(longestStreak);
-    final completionBadges = GamificationService.getCompletionBadges(totalCompleted);
+    final completionBadges = GamificationService.getCompletionBadges(
+      totalCompleted,
+    );
     final consistencyBadges = GamificationService.getConsistencyBadges(
       totalActiveDays,
       DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays,
     );
 
-    final allBadges = {...streakBadges, ...completionBadges, ...consistencyBadges}.toList();
+    final allBadges = {
+      ...streakBadges,
+      ...completionBadges,
+      ...consistencyBadges,
+    }.toList();
 
     return {
       'totalXP': totalXP,

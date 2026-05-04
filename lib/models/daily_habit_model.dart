@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
+import '../db/sqlite_helper.dart';
 
 // ============================================================================
 // UPDATED MODEL HABIT WITH STREAK & HISTORY
@@ -33,7 +35,6 @@ class DailyHabit {
   }) : historyDates = historyDates ?? [],
        createdAt = createdAt ?? DateTime.now();
 
-  /// Konversi ke Map untuk Hive
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -41,15 +42,14 @@ class DailyHabit {
       'description': description,
       'category': category,
       'target': target,
-      'isDoneToday': isDoneToday,
-      'lastCompletedDate': lastCompletedDate,
+      'is_done_today': isDoneToday ? 1 : 0,
+      'last_completed_date': lastCompletedDate,
       'streak': streak,
-      'historyDates': historyDates,
-      'createdAt': createdAt.toIso8601String(),
+      'history_dates': json.encode(historyDates),
+      'created_at': createdAt.toIso8601String(),
     };
   }
 
-  /// Create dari Map (Hive)
   factory DailyHabit.fromMap(Map<String, dynamic> map) {
     return DailyHabit(
       id: map['id'] ?? '',
@@ -57,12 +57,14 @@ class DailyHabit {
       description: map['description'] ?? '',
       category: map['category'] ?? 'Olahraga',
       target: map['target'] ?? 'Harian',
-      isDoneToday: map['isDoneToday'] ?? false,
-      lastCompletedDate: map['lastCompletedDate'],
+      isDoneToday: (map['is_done_today'] ?? 0) == 1,
+      lastCompletedDate: map['last_completed_date'],
       streak: map['streak'] ?? 0,
-      historyDates: List<String>.from(map['historyDates'] ?? []),
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
+      historyDates: List<String>.from(
+        json.decode(map['history_dates'] ?? '[]'),
+      ),
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'])
           : DateTime.now(),
     );
   }
@@ -495,46 +497,54 @@ class StatisticsService {
 // HIVE BOX INITIALIZATION & PROVIDER
 // ============================================================================
 
-/// Hive adapter untuk Hive persistence storage
-class HabitStorageService {
-  static const String boxName = 'daily_habits';
+class SqliteHabitHelper {
+  static const String _tableName = 'daily_habits';
 
-  /// Initialize Hive box
-  static Future<Box<Map>> initializeBox() async {
-    if (!Hive.isBoxOpen(boxName)) {
-      return await Hive.openBox<Map>(boxName);
-    }
-    return Hive.box<Map>(boxName);
+  static Database? _database;
+  static SqliteHabitHelper? _instance;
+
+  factory SqliteHabitHelper() => _instance ??= SqliteHabitHelper._();
+
+  SqliteHabitHelper._();
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await SqliteHelper.instance.database;
+    return _database!;
   }
 
-  /// Get all habits from Hive
+  /// Get all daily habits
   static Future<List<DailyHabit>> getAllHabits() async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    return box.values
-        .map((e) => DailyHabit.fromMap(Map<String, dynamic>.from(e)))
-        .toList();
+    final helper = SqliteHabitHelper();
+    final db = await helper.database;
+    final List<Map<String, dynamic>> maps = await db.query(_tableName);
+    return List.generate(maps.length, (i) => DailyHabit.fromMap(maps[i]));
   }
 
-  /// Save habit to Hive
-  static Future<void> saveHabit(DailyHabit habit) async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.put(habit.id, habit.toMap());
+  /// Save/insert daily habit
+  static Future<int> saveHabit(DailyHabit habit) async {
+    final helper = SqliteHabitHelper();
+    final db = await helper.database;
+    final map = habit.toMap();
+    return await db.insert(
+      _tableName,
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
-  /// Delete habit from Hive
-  static Future<void> deleteHabit(String habitId) async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.delete(habitId);
+  /// Delete daily habit
+  static Future<int> deleteHabit(String habitId) async {
+    final helper = SqliteHabitHelper();
+    final db = await helper.database;
+    return await db.delete(_tableName, where: 'id = ?', whereArgs: [habitId]);
   }
 
-  /// Clear all habits
-  static Future<void> clearAllHabits() async {
-    await initializeBox();
-    final box = Hive.box<Map>(boxName);
-    await box.clear();
+  /// Clear all daily habits
+  static Future<int> clearAllHabits() async {
+    final helper = SqliteHabitHelper();
+    final db = await helper.database;
+    return await db.delete(_tableName);
   }
 }
 
@@ -554,10 +564,10 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
     _loadHabits();
   }
 
-  /// Load habits dari Hive
+  /// Load habits dari SQLite
   Future<void> _loadHabits() async {
     try {
-      final habits = await HabitStorageService.getAllHabits();
+      final habits = await SqliteHabitHelper.getAllHabits();
       // Reset isDoneToday jika bukan hari yang sama
       _resetDailyStatusIfNeeded(habits);
       // Recalculate streaks
@@ -620,8 +630,8 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
       final updatedHabits = [...habits];
       updatedHabits[habitIndex] = finalHabit;
 
-      // Save ke Hive
-      await HabitStorageService.saveHabit(finalHabit);
+      // Save ke SQLite
+      await SqliteHabitHelper.saveHabit(finalHabit);
 
       // Update state
       state = AsyncValue.data(updatedHabits);
@@ -634,7 +644,7 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
     final habits = currentState.value ?? [];
     habits.add(habit);
 
-    await HabitStorageService.saveHabit(habit);
+    await SqliteHabitHelper.saveHabit(habit);
     state = AsyncValue.data(habits);
   }
 
@@ -644,7 +654,7 @@ class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
     final habits = currentState.value ?? [];
     habits.removeWhere((h) => h.id == habitId);
 
-    await HabitStorageService.deleteHabit(habitId);
+    await SqliteHabitHelper.deleteHabit(habitId);
     state = AsyncValue.data(habits);
   }
 }

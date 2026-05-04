@@ -1,188 +1,206 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/habit_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/daily_habit_model.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final controller = TextEditingController();
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late final TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    Provider.of<HabitProvider>(context, listen: false).loadLocalHabits();
+    _controller = TextEditingController();
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<HabitProvider>(context);
+    final habitsAsync = ref.watch(dailyHabitsProvider);
+    final progress = ref.watch(dailyProgressProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Habit Tracker"),
+        title: const Text("Habit Tracker"),
         centerTitle: true,
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.cloud_download),
+            icon: const Icon(Icons.cloud_download),
             onPressed: () {
-              provider.fetchFromApi();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Habits fetched from API!')),
+                const SnackBar(content: Text('Feature coming soon!')),
               );
             },
-            tooltip: 'Fetch from API',
+            tooltip: 'Sync habits',
           ),
         ],
       ),
       body: Column(
         children: [
+          // Streak Header
           Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.only(
+              color: Colors.indigo.shade50,
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(16),
                 bottomRight: Radius.circular(16),
               ),
             ),
             child: Row(
               children: [
-                Text("🔥", style: TextStyle(fontSize: 24)),
-                SizedBox(width: 8),
+                const Text("🔥", style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 8),
                 Text(
-                  "Streak: ${provider.streak} habits done",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  "Today: ${progress['completed']}/${progress['total']}",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
+          // Add Habit
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: controller,
+                    controller: _controller,
                     decoration: InputDecoration(
                       hintText: "Add new habit...",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 12,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 FloatingActionButton(
                   mini: true,
                   onPressed: () {
-                    if (controller.text.isNotEmpty) {
-                      provider.addHabit(controller.text);
-                      controller.clear();
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Habit added!')));
+                    if (_controller.text.isNotEmpty) {
+                      final newHabit = DailyHabit(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        name: _controller.text.trim(),
+                        category: 'Personal',
+                        target: 'Harian',
+                      );
+                      ref.read(dailyHabitsProvider.notifier).addHabit(newHabit);
+                      _controller.clear();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Habit added!')),
+                      );
                     }
                   },
-                  child: Icon(Icons.add),
+                  child: const Icon(Icons.add),
                 ),
               ],
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
+          // Habits List
           Expanded(
-            child: provider.habits.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.playlist_add_check,
-                          size: 64,
-                          color: Colors.grey.shade300,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'No habits yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey.shade600,
+            child: habitsAsync.when(
+              data: (habits) => habits.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.incomplete_circle_outlined,
+                            size: 64,
+                            color: Colors.grey,
                           ),
-                        ),
-                        Text(
-                          'Add your first habit to get started!',
-                          style: TextStyle(color: Colors.grey.shade400),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: provider.habits.length,
-                    itemBuilder: (context, index) {
-                      final h = provider.habits[index];
-                      return Card(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: ListTile(
-                          title: Text(h.title),
-                          subtitle: Text(h.date),
-                          leading: Checkbox(
-                            value: h.isDone == 1,
-                            onChanged: (_) => provider.toggleHabit(h),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No habits yet',
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
                           ),
-                          trailing: IconButton(
-                            icon: Icon(
-                              Icons.delete,
-                              color: Colors.red.shade400,
+                          Text(
+                            'Add your first habit to get started!',
+                            style: TextStyle(color: Colors.grey.shade400),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: habits.length,
+                      itemBuilder: (context, index) {
+                        final habit = habits[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: ListTile(
+                            title: Text(habit.name),
+                            subtitle: Text(habit.getStreakBadge()),
+                            leading: Checkbox(
+                              value: habit.isDoneToday,
+                              onChanged: (_) => ref
+                                  .read(dailyHabitsProvider.notifier)
+                                  .toggleHabitCompletion(habit.id),
                             ),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('Delete habit?'),
-                                  content: Text(
-                                    'Are you sure you want to delete "${h.title}"?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text('Cancel'),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete habit?'),
+                                    content: Text(
+                                      'Are you sure you want to delete "${habit.name}"?',
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        provider.deleteHabit(h.id!);
-                                        Navigator.pop(context);
-                                      },
-                                      child: Text(
-                                        'Delete',
-                                        style: TextStyle(color: Colors.red),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Cancel'),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                                      TextButton(
+                                        onPressed: () {
+                                          ref
+                                              .read(
+                                                dailyHabitsProvider.notifier,
+                                              )
+                                              .deleteHabit(habit.id);
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text(
+                                          'Delete',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => Center(child: Text('Error: $error')),
+            ),
           ),
         ],
       ),

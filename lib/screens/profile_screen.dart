@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
-import 'services/gamification_service.dart';
-import 'services/auth_service.dart';
+import '../services/gamification_service.dart';
+import '../services/auth_service.dart';
+import '../models/daily_habit_model.dart';
 
 // ============================================================================
 // PROFILE SCREEN WITH GAMIFICATION
 // ============================================================================
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -21,7 +22,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 2),
+    );
   }
 
   @override
@@ -33,7 +36,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(dailyHabitsProvider);
-    final authState = ref.watch(authStateProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -108,9 +110,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   children: [
                     // Level Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -125,10 +130,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     Text(
                       '${profileStats['totalXP']} XP',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
                     ),
                   ],
                 ),
@@ -181,9 +183,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -201,9 +201,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 Text(
                   '$xpInLevel / ${xpInLevel + xpToNext} XP',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -213,16 +211,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               minHeight: 8,
               backgroundColor: Colors.grey.shade200,
               valueColor: AlwaysStoppedAnimation<Color>(
-                progress >= 0.8 ? Colors.green : progress >= 0.5 ? Colors.orange : Colors.blue,
+                progress >= 0.8
+                    ? Colors.green
+                    : progress >= 0.5
+                    ? Colors.orange
+                    : Colors.blue,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               '$xpToNext XP lagi ke level berikutnya',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
             ),
           ],
         ),
@@ -233,9 +232,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildDailyQuote(Map<String, String> quote) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -247,28 +244,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(width: 8),
                 const Text(
                   'Quote Harian',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               '"${quote['quote']}"',
-              style: const TextStyle(
-                fontSize: 16,
-                fontStyle: FontStyle.italic,
-              ),
+              style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 8),
             Text(
               '- ${quote['author']}',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
               textAlign: TextAlign.right,
             ),
           ],
@@ -313,12 +301,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -337,10 +328,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -357,10 +345,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       children: [
         const Text(
           '🏆 Achievement Badges',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         badges.isEmpty
@@ -375,9 +360,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Text(
                       'Belum ada achievement\nMulai bangun streak Anda!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(color: Colors.grey),
                     ),
                   ),
                 ),
@@ -385,14 +368,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             : Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: badges.map((badge) => Chip(
-                  label: Text(badge),
-                  backgroundColor: Colors.amber.shade100,
-                  labelStyle: TextStyle(
-                    color: Colors.amber.shade800,
-                    fontWeight: FontWeight.w500,
-                  ),
-                )).toList(),
+                children: badges
+                    .map(
+                      (badge) => Chip(
+                        label: Text(badge),
+                        backgroundColor: Colors.amber.shade100,
+                        labelStyle: TextStyle(
+                          color: Colors.amber.shade800,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
       ],
     );
@@ -401,9 +388,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildAccountActions() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           ListTile(
@@ -428,36 +413,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _syncToCloud() async {
     try {
-      final habits = await ref.read(dailyHabitsProvider.future);
+      final habitsAsync = ref.watch(dailyHabitsProvider);
       final authService = ref.read(authServiceProvider);
       final firestoreService = ref.read(firestoreServiceProvider);
 
       final user = authService.currentUser;
       if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Silakan login terlebih dahulu'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Silakan login terlebih dahulu'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
         return;
       }
 
-      await firestoreService.syncHabitsToCloud(user.uid, habits);
+      habitsAsync.whenData((habits) async {
+        await firestoreService.syncHabitsToCloud(
+          user.uid,
+          habits as List<dynamic>,
+        );
+      });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data berhasil disinkronisasi ke cloud'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil disinkronisasi ke cloud'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal sync: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal sync: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -470,12 +466,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal logout: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal logout: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
@@ -485,7 +483,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 // ============================================================================
 
 class DailyQuoteWidget extends StatelessWidget {
-  const DailyQuoteWidget({Key? key}) : super(key: key);
+  const DailyQuoteWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -494,9 +492,7 @@ class DailyQuoteWidget extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -526,10 +522,7 @@ class DailyQuoteWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '- ${quote['author']}',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
               textAlign: TextAlign.right,
             ),
           ],
@@ -547,11 +540,7 @@ class LevelUpAnimation extends StatefulWidget {
   final int newLevel;
   final VoidCallback? onComplete;
 
-  const LevelUpAnimation({
-    Key? key,
-    required this.newLevel,
-    this.onComplete,
-  }) : super(key: key);
+  const LevelUpAnimation({super.key, required this.newLevel, this.onComplete});
 
   @override
   State<LevelUpAnimation> createState() => _LevelUpAnimationState();
@@ -578,21 +567,14 @@ class _LevelUpAnimationState extends State<LevelUpAnimation>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _scaleController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.2).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    );
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeIn,
-    ));
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
 
     _scaleController.forward();
     _fadeController.forward().then((_) {
@@ -627,7 +609,7 @@ class _LevelUpAnimationState extends State<LevelUpAnimation>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.3),
+                    color: Colors.orange.withValues(alpha: 0.3),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -636,11 +618,7 @@ class _LevelUpAnimationState extends State<LevelUpAnimation>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.star,
-                    color: Colors.white,
-                    size: 48,
-                  ),
+                  const Icon(Icons.star, color: Colors.white, size: 48),
                   const SizedBox(height: 16),
                   const Text(
                     'LEVEL UP!',
@@ -653,10 +631,7 @@ class _LevelUpAnimationState extends State<LevelUpAnimation>
                   const SizedBox(height: 8),
                   Text(
                     'Selamat! Anda naik ke Level ${widget.newLevel}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
                 ],

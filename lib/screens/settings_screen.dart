@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'dart:io';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -65,14 +65,12 @@ class SettingsService {
   static TimeOfDay getNotificationTime() {
     final timeString = _prefs.getString(_notificationTimeKey) ?? '09:00';
     final parts = timeString.split(':');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
-    );
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
   static Future<void> setNotificationTime(TimeOfDay time) async {
-    final timeString = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final timeString =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
     await _prefs.setString(_notificationTimeKey, timeString);
   }
 }
@@ -83,7 +81,9 @@ class BackupService {
   static Future<String?> backupData(List<dynamic> habits) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
       final fileName = 'habit_backup_$timestamp.json';
       final file = File('${directory.path}/$fileName');
 
@@ -128,7 +128,11 @@ class BackupService {
       final directory = await getApplicationDocumentsDirectory();
       final files = Directory(directory.path)
           .listSync()
-          .where((file) => file.path.contains('habit_backup_') && file.path.endsWith('.json'))
+          .where(
+            (file) =>
+                file.path.contains('habit_backup_') &&
+                file.path.endsWith('.json'),
+          )
           .toList();
       return files;
     } catch (e) {
@@ -140,7 +144,9 @@ class BackupService {
   static Future<String?> exportToCSV(List<dynamic> habits) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
       final fileName = 'habit_export_$timestamp.csv';
       final file = File('${directory.path}/$fileName');
 
@@ -154,7 +160,7 @@ class BackupService {
         'Streak',
         'Last Completed',
         'Created At',
-        'History Count'
+        'History Count',
       ];
 
       final csvContent = StringBuffer();
@@ -215,18 +221,25 @@ class NotificationService {
 
   /// Request permissions
   static Future<bool> requestPermissions() async {
-    final androidPlugin = _notificationsPlugin?.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _notificationsPlugin
+        ?.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
 
-    final iosPlugin = _notificationsPlugin?.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final iosPlugin = _notificationsPlugin
+        ?.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
 
-    final androidGranted = await androidPlugin?.requestNotificationsPermission() ?? false;
-    final iosGranted = await iosPlugin?.requestPermissions(
-      alert: true,
-      badge: true,
-      sound: true,
-    ) ?? false;
+    final androidGranted =
+        await androidPlugin?.requestNotificationsPermission() ?? false;
+    final iosGranted =
+        await iosPlugin?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        ) ??
+        false;
 
     return androidGranted || iosGranted;
   }
@@ -252,16 +265,15 @@ class NotificationService {
     final reminderTime = scheduledTime.isBefore(now)
         ? scheduledTime.add(const Duration(days: 1))
         : scheduledTime;
-
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      channelDescription: channelDescription,
-      importance: Importance.high,
-      priority: Priority.high,
-      sound: AndroidNotificationSound.defaultSound,
-      enableVibration: true,
-    );
+    final AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+        );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
       sound: 'default.wav',
@@ -270,7 +282,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -299,7 +311,8 @@ class NotificationService {
   }
 
   /// Get pending notifications
-  static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+  static Future<List<PendingNotificationRequest>>
+  getPendingNotifications() async {
     return await _notificationsPlugin?.pendingNotificationRequests() ?? [];
   }
 
@@ -307,15 +320,16 @@ class NotificationService {
   static Future<void> showTestNotification() async {
     if (_notificationsPlugin == null) return;
 
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      channelDescription: channelDescription,
-    );
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+        );
 
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: const DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(),
     );
 
     await _notificationsPlugin?.show(
@@ -332,7 +346,9 @@ class NotificationService {
 // ============================================================================
 
 /// Provider untuk theme mode
-final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((
+  ref,
+) {
   return ThemeModeNotifier();
 });
 
@@ -353,15 +369,16 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
 }
 
 /// Provider untuk notification settings
-final notificationSettingsProvider = StateNotifierProvider<NotificationSettingsNotifier, Map<String, dynamic>>((ref) {
-  return NotificationSettingsNotifier();
-});
+final notificationSettingsProvider =
+    StateNotifierProvider<NotificationSettingsNotifier, Map<String, dynamic>>((
+      ref,
+    ) {
+      return NotificationSettingsNotifier();
+    });
 
 class NotificationSettingsNotifier extends StateNotifier<Map<String, dynamic>> {
-  NotificationSettingsNotifier() : super({
-    'enabled': false,
-    'time': const TimeOfDay(hour: 9, minute: 0),
-  }) {
+  NotificationSettingsNotifier()
+    : super({'enabled': false, 'time': const TimeOfDay(hour: 9, minute: 0)}) {
     _loadSettings();
   }
 
@@ -410,7 +427,7 @@ class NotificationSettingsNotifier extends StateNotifier<Map<String, dynamic>> {
 // ============================================================================
 
 class SettingsScreen extends ConsumerStatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -474,9 +491,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(width: 12),
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -486,11 +503,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildAppearanceSettings(ThemeMode currentTheme) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 14,
+        ),
         tileColor: Theme.of(context).colorScheme.surface,
         leading: Container(
           padding: const EdgeInsets.all(10),
@@ -517,10 +535,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value: ThemeMode.light,
               child: const Text('Light'),
             ),
-            DropdownMenuItem(
-              value: ThemeMode.dark,
-              child: const Text('Dark'),
-            ),
+            DropdownMenuItem(value: ThemeMode.dark, child: const Text('Dark')),
           ],
           onChanged: (value) {
             if (value != null) {
@@ -538,14 +553,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         children: [
           SwitchListTile(
-            activeColor: Theme.of(context).colorScheme.primary,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 8,
+            ),
             secondary: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -588,9 +604,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildDataManagementSettings() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         children: [
           ListTile(
@@ -654,9 +668,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildAboutSection() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: const Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -664,24 +676,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             Text(
               'Habit Tracker Pro',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-            Text(
-              'Version 1.0.0',
-              style: TextStyle(
-                color: Colors.grey,
-              ),
-            ),
+            Text('Version 1.0.0', style: TextStyle(color: Colors.grey)),
             SizedBox(height: 8),
             Text(
               'A comprehensive habit tracking app with streaks, statistics, and daily reminders.',
-              style: TextStyle(
-                color: Colors.grey,
-              ),
+              style: TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -735,10 +737,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -780,10 +779,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -812,10 +808,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }

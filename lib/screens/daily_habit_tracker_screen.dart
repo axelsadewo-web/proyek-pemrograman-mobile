@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:project_/models/daily_habit_model.dart';
+import '../models/daily_habit_model.dart';
+import '../providers/habits_riverpod.dart';
+import '../db/sqlite_helper.dart';
 
 // ============================================================================
 // DAILY HABIT TRACKER SCREEN
 // ============================================================================
 
 class DailyHabitTrackerScreen extends ConsumerStatefulWidget {
-  const DailyHabitTrackerScreen({Key? key}) : super(key: key);
+  const DailyHabitTrackerScreen({super.key});
 
   @override
   ConsumerState<DailyHabitTrackerScreen> createState() =>
@@ -24,8 +26,8 @@ class _DailyHabitTrackerScreenState
 
   /// Initialize demo data jika belum ada
   Future<void> _initializeDemoData() async {
-    final habits = await HabitStorageService.getAllHabits();
-    if (habits.isEmpty) {
+    final count = await SqliteHelper.instance.getHabitsCount();
+    if (count == 0) {
       final demoHabits = [
         DailyHabit(
           id: '1',
@@ -65,19 +67,19 @@ class _DailyHabitTrackerScreenState
       ];
 
       for (final habit in demoHabits) {
-        await HabitStorageService.saveHabit(habit);
+        await SqliteHelper.instance.insertHabit(habit);
       }
 
       if (mounted) {
-        final _ = ref.refresh(dailyHabitsProvider);
+        ref.read(habitsProvider.notifier).loadHabits();
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final habitsAsync = ref.watch(dailyHabitsProvider);
-    final progress = ref.watch(dailyProgressProvider);
+    final habitsAsync = ref.watch(habitsProvider);
+    final progress = ref.watch(progressProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -96,34 +98,83 @@ class _DailyHabitTrackerScreenState
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, '/add-habit'),
-        child: const Icon(Icons.add),
         tooltip: 'Tambah Habit Baru',
+        child: const Icon(Icons.add),
       ),
       body: habitsAsync.when(
         data: (habits) => RefreshIndicator(
           onRefresh: () async {
-            ref.refresh(dailyHabitsProvider);
+            ref.read(habitsProvider.notifier).loadHabits();
             await Future.delayed(const Duration(milliseconds: 200));
           },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                // Progress Section
-                _buildProgressSection(progress),
-                const SizedBox(height: 16),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.read(habitsProvider.notifier).loadHabits();
+              await Future.delayed(const Duration(milliseconds: 200));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Progress Section
+                  _buildProgressSection(progress),
+                  const SizedBox(height: 16),
 
-                // Habits List
-                if (habits.isEmpty)
-                  _buildEmptyState()
-                else
-                  _buildHabitsList(habits),
-              ],
+                  // Habits List
+                  if (habits.isEmpty)
+                    _buildEmptyState()
+                  else
+                    _buildHabitsList(habits),
+                ],
+              ),
             ),
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, st) => Center(child: Text('Error: $error')),
+        error: (error, st) {
+          debugPrint('DailyHabits Error: $error');
+          debugPrint('Stack Trace: $st');
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 60),
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 64,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Terjadi Kesalahan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$error',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref.read(habitsProvider.notifier).loadHabits();
+                      },
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -139,20 +190,15 @@ class _DailyHabitTrackerScreenState
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-<<<<<<< HEAD
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade400, Colors.blue.shade600],
-=======
         gradient: const LinearGradient(
           colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
->>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withOpacity(0.25),
+            color: Colors.indigo.withValues(alpha: 0.25),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -177,7 +223,7 @@ class _DailyHabitTrackerScreenState
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.22),
+                  color: Colors.white.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -197,7 +243,7 @@ class _DailyHabitTrackerScreenState
             child: LinearProgressIndicator(
               value: percentage,
               minHeight: 14,
-              backgroundColor: Colors.white.withOpacity(0.18),
+              backgroundColor: Colors.white.withValues(alpha: 0.18),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color(0xFFEC4899),
               ),
@@ -232,7 +278,7 @@ class _DailyHabitTrackerScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.16),
+          color: Colors.white.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -251,10 +297,7 @@ class _DailyHabitTrackerScreenState
                 ),
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -262,15 +305,6 @@ class _DailyHabitTrackerScreenState
         ),
       ),
     );
-  }
-
-  /// Get motivation text berdasarkan progress
-  String _getMotivationText(int completed, int total) {
-    if (total == 0) return 'Belum ada kebiasaan';
-    if (completed == 0) return 'Mulai dari satu kebiasaan 💪';
-    if (completed == total) return 'Sempurna! Semua kebiasaan selesai ✨';
-    final remaining = total - completed;
-    return 'Lanjutkan! Tinggal $remaining kebiasaan lagi 🎯';
   }
 
   /// Build list of habits
@@ -292,9 +326,7 @@ class _DailyHabitTrackerScreenState
 
     return GestureDetector(
       onTap: canCheck
-          ? () => ref
-                .read(dailyHabitsProvider.notifier)
-                .toggleHabitCompletion(habit.id)
+          ? () => ref.read(habitsProvider.notifier).toggleHabit(habit.id)
           : null,
       child: Card(
         margin: const EdgeInsets.only(bottom: 14),
@@ -310,9 +342,7 @@ class _DailyHabitTrackerScreenState
                     end: Alignment.bottomRight,
                   )
                 : null,
-            color: habit.isDoneToday
-                ? null
-                : Theme.of(context).cardColor,
+            color: habit.isDoneToday ? null : Theme.of(context).cardColor,
             border: Border.all(
               color: habit.isDoneToday
                   ? Colors.green.shade300
@@ -321,15 +351,10 @@ class _DailyHabitTrackerScreenState
             ),
           ),
           child: ListTile(
-<<<<<<< HEAD
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+              horizontal: 20,
+              vertical: 16,
             ),
-=======
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
->>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
             title: Text(
               habit.name,
               style: TextStyle(
@@ -350,24 +375,14 @@ class _DailyHabitTrackerScreenState
                 if (habit.description.isNotEmpty)
                   Text(
                     habit.description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 if (habit.description.isNotEmpty) const SizedBox(height: 8),
                 Text(
                   'Terakhir: ${habit.getLastCompletedDateFormatted()}',
-<<<<<<< HEAD
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-=======
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
->>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -392,11 +407,9 @@ class _DailyHabitTrackerScreenState
         child: Checkbox(
           value: habit.isDoneToday,
           onChanged: canCheck
-              ? (_) => ref
-                    .read(dailyHabitsProvider.notifier)
-                    .toggleHabitCompletion(habit.id)
+              ? (_) => ref.read(habitsProvider.notifier).toggleHabit(habit.id)
               : null,
-          fillColor: MaterialStateProperty.all(
+          fillColor: WidgetStateProperty.all(
             habit.isDoneToday ? Colors.green : Colors.transparent,
           ),
           checkColor: Colors.white,
@@ -442,26 +455,4 @@ class _DailyHabitTrackerScreenState
 // MAIN APP (untuk testing)
 // ============================================================================
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Hive
-  await HabitStorageService.initializeBox();
-
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Daily Habit Tracker',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      darkTheme: ThemeData.dark(useMaterial3: true),
-      themeMode: ThemeMode.system,
-      home: const ProviderScope(child: DailyHabitTrackerScreen()),
-    );
-  }
-}
+// Removed testing main() - use main.dart

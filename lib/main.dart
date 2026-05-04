@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'models/daily_habit_model.dart';
 import 'screens/daily_habit_tracker_screen.dart';
 import 'screens/add_edit_habit_screen.dart';
 import 'screens/statistics_screen.dart';
@@ -23,64 +22,76 @@ import 'services/home_widget_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  try {
+    // Initialize Firebase
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
 
-  // Initialize Hive
-  await Hive.initFlutter();
-  await HabitStorageService.initializeBox();
+  // SQLite auto-initialized on first use - no explicit init needed
 
-  // Initialize Home Widget
-  await HomeWidget.setAppGroupId('group.habit_tracker_widget');
+  try {
+    // Initialize Home Widget
+    await HomeWidget.setAppGroupId('group.habit_tracker_widget');
+  } catch (e) {
+    debugPrint('Home Widget initialization error: $e');
+  }
 
-  // Initialize Localization
-  await LocalizationService.initialize();
+  try {
+    // Initialize Localization
+    await LocalizationService.initialize();
+  } catch (e) {
+    debugPrint('Localization initialization error: $e');
+  }
 
   // Request permissions
   await _requestPermissions();
 
-  runApp(
-    const ProviderScope(
-      child: LocalizedApp(
-        child: MyApp(),
-      ),
-    ),
-  );
+  runApp(const ProviderScope(child: LocalizedApp(child: MyApp())));
 }
 
 Future<void> _requestPermissions() async {
-  // Request notification permission
-  final notificationStatus = await Permission.notification.request();
-
-  // Request exact alarm permission for Android 12+
-  if (await Permission.scheduleExactAlarm.isGranted == false) {
-    await Permission.scheduleExactAlarm.request();
+  try {
+    // Request notification permission
+    final notificationStatus = await Permission.notification.request();
+    debugPrint('Notification permission: $notificationStatus');
+  } catch (e) {
+    debugPrint('Notification permission error: $e');
   }
 
-  // Request storage permission for exports
-  await Permission.storage.request();
+  // Request exact alarm permission for Android 12+ (not on web)
+  if (!kIsWeb) {
+    try {
+      if (await Permission.scheduleExactAlarm.isGranted == false) {
+        await Permission.scheduleExactAlarm.request();
+      }
+    } catch (e) {
+      debugPrint('Schedule exact alarm permission error: $e');
+    }
+  }
 
-  debugPrint('Notification permission: $notificationStatus');
+  // Request storage permission for exports (not on web)
+  if (!kIsWeb) {
+    try {
+      await Permission.storage.request();
+    } catch (e) {
+      debugPrint('Storage permission error: $e');
+    }
+  }
 }
 
 class MyApp extends ConsumerWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch auth state to determine initial screen
-    final authState = ref.watch(authStateProvider);
-
     return MaterialApp(
       title: 'Habit Tracker Pro',
       theme: ThemeData(
         colorSchemeSeed: Colors.indigo,
         useMaterial3: true,
         brightness: Brightness.light,
-<<<<<<< HEAD
-        cardTheme: CardThemeData(
-          elevation: 4,
-=======
         scaffoldBackgroundColor: const Color(0xFFF7F9FF),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.indigo.shade600,
@@ -95,9 +106,8 @@ class MyApp extends ConsumerWidget {
           showUnselectedLabels: true,
           elevation: 10,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 3,
->>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
@@ -117,11 +127,6 @@ class MyApp extends ConsumerWidget {
           elevation: 6,
         ),
       ),
-<<<<<<< HEAD
-      darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
-        cardTheme: CardThemeData(
-          elevation: 4,
-=======
       darkTheme: ThemeData(
         colorSchemeSeed: Colors.indigo,
         useMaterial3: true,
@@ -140,9 +145,8 @@ class MyApp extends ConsumerWidget {
           showUnselectedLabels: true,
           elevation: 10,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 3,
->>>>>>> ac332bd445d439c07c48f34b6d3bc410dd4bf9b9
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
@@ -168,21 +172,8 @@ class MyApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en', 'US'),
-        Locale('id', 'ID'),
-      ],
-      home: authState.when(
-        data: (user) => user != null ? const MainScreen() : const LoginScreen(),
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        error: (error, st) => Scaffold(
-          body: Center(
-            child: Text('Error: $error'),
-          ),
-        ),
-      ),
+      supportedLocales: const [Locale('en', 'US'), Locale('id', 'ID')],
+      home: const MainScreen(),
       routes: {
         '/home': (context) => const MainScreen(),
         '/login': (context) => const LoginScreen(),
@@ -200,7 +191,7 @@ class MyApp extends ConsumerWidget {
 // ============================================================================
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -214,13 +205,6 @@ class _MainScreenState extends State<MainScreen> {
     const StatisticsScreen(),
     const ProfileScreen(),
     const SettingsScreen(),
-  ];
-
-  final List<String> _titles = [
-    'Habits',
-    'Statistics',
-    'Profile',
-    'Settings',
   ];
 
   @override
@@ -239,18 +223,9 @@ class _MainScreenState extends State<MainScreen> {
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Stats',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
             label: 'Settings',
@@ -263,66 +238,6 @@ class _MainScreenState extends State<MainScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-    });
-  }
-}
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _screens = [
-    const DailyHabitTrackerScreen(),
-    const StatisticsScreen(),
-    const ReminderSettingsScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check_circle),
-            label: 'Habits',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Reminder',
-          ),
-        ],
-      ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: () => _addNewHabit(context),
-              child: const Icon(Icons.add),
-              tooltip: 'Tambah Habit Baru',
-            )
-          : null,
-    );
-  }
-
-  void _addNewHabit(BuildContext context) {
-    Navigator.pushNamed(context, '/add-habit').then((result) {
-      if (result is Habit) {
-        // Habit returned from AddEditHabitScreen.
-        // For now, just show success message.
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Habit berhasil ditambahkan!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
     });
   }
 }

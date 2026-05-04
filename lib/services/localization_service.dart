@@ -100,7 +100,7 @@ extension StringLocalizationExtension on String {
 class LocalizedApp extends StatefulWidget {
   final Widget child;
 
-  const LocalizedApp({Key? key, required this.child}) : super(key: key);
+  const LocalizedApp({super.key, required this.child});
 
   @override
   State<LocalizedApp> createState() => _LocalizedAppState();
@@ -127,7 +127,7 @@ class _LocalizedAppState extends State<LocalizedApp> {
 class LanguageDropdown extends StatefulWidget {
   final Function(String)? onLanguageChanged;
 
-  const LanguageDropdown({Key? key, this.onLanguageChanged}) : super(key: key);
+  const LanguageDropdown({super.key, this.onLanguageChanged});
 
   @override
   State<LanguageDropdown> createState() => _LanguageDropdownState();
@@ -141,7 +141,7 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
     final languages = LocalizationService.availableLanguages;
 
     return DropdownButtonFormField<String>(
-      value: _selectedLanguage,
+      initialValue: _selectedLanguage,
       decoration: InputDecoration(
         labelText: context.tr('language'),
         border: const OutlineInputBorder(),
