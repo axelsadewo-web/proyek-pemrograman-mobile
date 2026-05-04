@@ -66,6 +66,10 @@ dependencies:
   # Permissions
   permission_handler: ^11.0.1
 
+  # Platform utilities
+  path_provider: ^2.0.19
+  timezone: ^0.9.4
+
   # Localization
   flutter_localizations:
     sdk: flutter
