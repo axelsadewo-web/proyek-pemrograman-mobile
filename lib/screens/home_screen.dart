@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_habit_model.dart';
+import '../providers/habits_riverpod.dart';
+import '../providers/search_provider.dart';
+import '../providers/api_habits_provider.dart';
+import '../services/api_services.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});

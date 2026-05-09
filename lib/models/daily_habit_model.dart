@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
 import '../db/sqlite_helper.dart';
@@ -17,6 +17,7 @@ class DailyHabit {
   String description;
   String category;
   String target; // 'Harian' atau 'Mingguan'
+  String schedule; // Misalnya 'Setiap hari', 'Senin', dll.
   bool isDoneToday;
   String? lastCompletedDate; // Format: yyyy-MM-dd
   int streak; // Jumlah hari berturut-turut
@@ -29,6 +30,7 @@ class DailyHabit {
     this.description = '',
     required this.category,
     required this.target,
+    this.schedule = 'Setiap hari',
     this.isDoneToday = false,
     this.lastCompletedDate,
     this.streak = 0,
@@ -44,6 +46,7 @@ class DailyHabit {
       'description': description,
       'category': category,
       'target': target,
+      'schedule': schedule,
       'is_done_today': isDoneToday ? 1 : 0,
       'last_completed_date': lastCompletedDate,
       'streak': streak,
@@ -59,6 +62,7 @@ class DailyHabit {
       description: map['description'] ?? '',
       category: map['category'] ?? 'Olahraga',
       target: map['target'] ?? 'Harian',
+      schedule: map['schedule'] ?? 'Setiap hari',
       isDoneToday: (map['is_done_today'] ?? 0) == 1,
       lastCompletedDate: map['last_completed_date'],
       streak: map['streak'] ?? 0,
@@ -78,6 +82,7 @@ class DailyHabit {
     String? description,
     String? category,
     String? target,
+    String? schedule,
     bool? isDoneToday,
     String? lastCompletedDate,
     int? streak,
@@ -90,6 +95,7 @@ class DailyHabit {
       description: description ?? this.description,
       category: category ?? this.category,
       target: target ?? this.target,
+      schedule: schedule ?? this.schedule,
       isDoneToday: isDoneToday ?? this.isDoneToday,
       lastCompletedDate: lastCompletedDate ?? this.lastCompletedDate,
       streak: streak ?? this.streak,
@@ -137,6 +143,38 @@ class DailyHabit {
     if (streak >= 7) return '⚡ Weekly Warrior';
     if (streak >= 3) return '🌟 Getting Started';
     return '';
+  }
+
+  /// Get emoji untuk kategori
+  String getCategoryEmoji() {
+    switch (category.toLowerCase()) {
+      case 'olahraga':
+        return '🏃';
+      case 'kesehatan':
+        return '❤️';
+      case 'belajar':
+        return '📚';
+      case 'meditasi':
+        return '🧘';
+      case 'tidur':
+        return '😴';
+      case 'nutrisi':
+        return '🥗';
+      case 'produktivitas':
+        return '⚡';
+      case 'reading':
+        return '📖';
+      case 'coding':
+        return '💻';
+      case 'musik':
+        return '🎵';
+      case 'hobi':
+        return '🎨';
+      case 'sosial':
+        return '👥';
+      default:
+        return '✨';
+    }
   }
 }
 
@@ -553,190 +591,8 @@ class SqliteHabitHelper {
 // ============================================================================
 // RIVERPOD PROVIDERS
 // ============================================================================
-
-/// Provider untuk daily habits list dengan streak support
-final dailyHabitsProvider =
-    StateNotifierProvider<DailyHabitsNotifier, AsyncValue<List<DailyHabit>>>(
-      (ref) => DailyHabitsNotifier(),
-    );
-
-/// StateNotifier untuk manage daily habits dengan streak
-class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
-  DailyHabitsNotifier() : super(const AsyncValue.loading()) {
-    _loadHabits();
-  }
-
-  /// Load habits dari SQLite
-  Future<void> _loadHabits() async {
-    try {
-      final habits = await SqliteHabitHelper.getAllHabits();
-      // Reset isDoneToday jika bukan hari yang sama
-      _resetDailyStatusIfNeeded(habits);
-      // Recalculate streaks
-      _recalculateStreaks(habits);
-      state = AsyncValue.data(habits);
-    } catch (e, st) {
-      if (kIsWeb) {
-        final mockHabits = [
-          DailyHabit(
-            id: 'demo1',
-            name: 'Web Demo: Berlari Pagi',
-            description: '30 menit berlari setiap pagi',
-            category: 'Olahraga',
-            target: 'Harian',
-            streak: 7,
-          ),
-          DailyHabit(
-            id: 'demo2',
-            name: 'Web Demo: Baca Buku',
-            description: '20 halaman setiap hari',
-            category: 'Belajar',
-            target: 'Harian',
-            isDoneToday: true,
-            streak: 12,
-          ),
-        ];
-        state = AsyncValue.data(mockHabits);
-        print('Web mock habits loaded in DailyHabitsNotifier');
-      } else {
-        state = AsyncValue.error(e, st);
-      }
-    }
-  }
-
-  /// Public load habits method for screens
-  Future<void> loadHabits() async => _loadHabits();
-
-  /// Reset isDoneToday jika tanggal berbeda
-  void _resetDailyStatusIfNeeded(List<DailyHabit> habits) {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    for (final habit in habits) {
-      if (habit.lastCompletedDate != today && habit.isDoneToday) {
-        habit.isDoneToday = false;
-      }
-    }
-  }
-
-  /// Recalculate streaks untuk semua habits
-  void _recalculateStreaks(List<DailyHabit> habits) {
-    for (final habit in habits) {
-      habit.streak = StreakService.calculateStreak(habit.historyDates);
-    }
-  }
-
-  /// Toggle habit completion status dengan streak update
-  Future<void> toggleHabitCompletion(String habitId) async {
-    final currentState = state;
-    final habits = currentState.value ?? [];
-    final habitIndex = habits.indexWhere((h) => h.id == habitId);
-
-    if (habitIndex != -1) {
-      final habit = habits[habitIndex];
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      // Cek validasi: tidak boleh double checklist dalam 1 hari
-      if (habit.lastCompletedDate == today && habit.isDoneToday) {
-        // Sudah dilakukan hari ini, tidak bisa dicentang lagi
-        return;
-      }
-
-      // Toggle status
-      final isCompleting = !habit.isDoneToday;
-
-      // Update habit dengan streak calculation
-      final updatedHabit = StreakService.updateStreakForHabit(
-        habit,
-        isCompleting,
-      );
-      final finalHabit = updatedHabit.copyWith(
-        isDoneToday: isCompleting,
-        lastCompletedDate: isCompleting
-            ? today
-            : updatedHabit.lastCompletedDate,
-      );
-
-      // Update list
-      final updatedHabits = [...habits];
-      updatedHabits[habitIndex] = finalHabit;
-
-      // Save ke SQLite
-      await SqliteHabitHelper.saveHabit(finalHabit);
-
-      // Update state
-      state = AsyncValue.data(updatedHabits);
-    }
-  }
-
-  /// Add habit baru
-  Future<void> addHabit(DailyHabit habit) async {
-    final currentState = state;
-    final habits = currentState.value ?? [];
-    habits.add(habit);
-
-    await SqliteHabitHelper.saveHabit(habit);
-    state = AsyncValue.data(habits);
-  }
-
-  /// Delete habit
-  Future<void> deleteHabit(String habitId) async {
-    final currentState = state;
-    final habits = currentState.value ?? [];
-    habits.removeWhere((h) => h.id == habitId);
-
-    await SqliteHabitHelper.deleteHabit(habitId);
-    state = AsyncValue.data(habits);
-  }
-}
-
-/// Provider untuk hitung progress hari ini
-final dailyProgressProvider = Provider<Map<String, int>>((ref) {
-  final habitsAsync = ref.watch(dailyHabitsProvider);
-
-  return habitsAsync.when(
-    data: (habits) {
-      final completed = habits.where((h) => h.isDoneToday).length;
-      final total = habits.length;
-      return {'completed': completed, 'total': total};
-    },
-    loading: () => {'completed': 0, 'total': 0},
-    error: (_, __) => {'completed': 0, 'total': 0},
-  );
-});
-
-/// Provider untuk statistics
-final statisticsProvider = Provider<Map<String, dynamic>>((ref) {
-  final habitsAsync = ref.watch(dailyHabitsProvider);
-
-  return habitsAsync.when(
-    data: (habits) => StatisticsService.getOverallStats(habits),
-    loading: () => {},
-    error: (_, __) => {},
-  );
-});
-
-/// Provider untuk weekly stats
-final weeklyStatsProvider = Provider<Map<String, dynamic>>((ref) {
-  final habitsAsync = ref.watch(dailyHabitsProvider);
-
-  return habitsAsync.when(
-    data: (habits) => StatisticsService.getWeeklyStats(habits),
-    loading: () => {},
-    error: (_, __) => {},
-  );
-});
-
-/// Provider untuk monthly stats
-final monthlyStatsProvider = Provider<Map<String, dynamic>>((ref) {
-  final habitsAsync = ref.watch(dailyHabitsProvider);
-
-  return habitsAsync.when(
-    data: (habits) => StatisticsService.getMonthlyStats(habits),
-    loading: () => {},
-    error: (_, __) => {},
-  );
-});
-
-/// Provider untuk public API habits
-final apiHabitsProvider = FutureProvider<List<dynamic>>((ref) async {
-  return ApiService.fetchHabits();
-});
+//
+// Catatan:
+// Provider Riverpod untuk daily habits seharusnya berada di folder `lib/providers/`.
+// Definisi provider di file model ini sengaja dihapus untuk mencegah Ambiguous Import.
+// ============================================================================

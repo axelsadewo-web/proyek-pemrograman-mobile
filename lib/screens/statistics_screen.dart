@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/daily_habit_model.dart';
+import '../providers/habits_riverpod.dart';
+import '../providers/statistics_providers.dart';
 
 // ============================================================================
 // STATISTICS SCREEN

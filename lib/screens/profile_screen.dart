@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import '../services/gamification_service.dart';
-import '../services/auth_service.dart';
+import '../services/auth_service.dart' as auth_service;
 import '../models/daily_habit_model.dart';
+import '../providers/auth_provider.dart';
+import '../providers/habits_riverpod.dart';
 
 // ============================================================================
 // PROFILE SCREEN WITH GAMIFICATION
@@ -415,7 +417,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final habitsAsync = ref.watch(dailyHabitsProvider);
       final authService = ref.read(authServiceProvider);
-      final firestoreService = ref.read(firestoreServiceProvider);
+      final firestoreService = ref.read(auth_service.firestoreServiceProvider);
 
       final user = authService.currentUser;
       if (user == null) {
@@ -459,6 +461,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _logout() async {
     try {
+      ref.read(localAuthProvider.notifier).state = false;
       final authService = ref.read(authServiceProvider);
       await authService.signOut();
 

@@ -1,105 +1,164 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../models/daily_habit_model.dart';
-import '../db/sqlite_helper.dart';
 
-final habitsProvider =
-    StateNotifierProvider<HabitsNotifier, AsyncValue<List<DailyHabit>>>(
-      (ref) => HabitsNotifier(),
+import '../db/sqlite_helper.dart';
+import '../models/daily_habit_model.dart';
+
+/// Riverpod untuk daily habits + streak/history
+final dailyHabitsProvider =
+    StateNotifierProvider<DailyHabitsNotifier, AsyncValue<List<DailyHabit>>>(
+      (ref) => DailyHabitsNotifier(),
     );
 
-class HabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
-  HabitsNotifier() : super(const AsyncValue.loading()) {
-    loadHabits();
+class DailyHabitsNotifier extends StateNotifier<AsyncValue<List<DailyHabit>>> {
+  DailyHabitsNotifier() : super(const AsyncValue.loading()) {
+    _loadHabits();
   }
 
-  Future<void> loadHabits() async {
+  Future<void> _loadHabits() async {
     state = const AsyncValue.loading();
     try {
       final habits = await SqliteHelper.instance.getAllHabits();
+
+      _resetDailyStatusIfNeeded(habits);
+      _recalculateStreaks(habits);
+
       state = AsyncValue.data(habits);
     } catch (e, st) {
-      // Fallback to mock data on web/SQLite error
       if (kIsWeb) {
-        final mockHabits = [
+        // fallback biar web tetap jalan
+        state = AsyncValue.data([
           DailyHabit(
-            id: 'mock1',
-            name: 'Demo Habit 1 (Web)',
-            description: 'This is mock for web testing',
-            category: 'Demo',
+            id: 'demo1',
+            name: 'Web Demo: Berlari Pagi',
+            description: '30 menit berlari setiap pagi',
+            category: 'Olahraga',
             target: 'Harian',
+            streak: 7,
             isDoneToday: false,
-            streak: 3,
+            historyDates: [],
           ),
           DailyHabit(
-            id: 'mock2',
-            name: 'Demo Habit 2 (Web)',
-            description: 'SQLite works on Android/iOS',
-            category: 'Demo',
+            id: 'demo2',
+            name: 'Web Demo: Baca Buku',
+            description: '20 halaman setiap hari',
+            category: 'Belajar',
             target: 'Harian',
+            streak: 12,
             isDoneToday: true,
-            streak: 5,
+            lastCompletedDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            historyDates: [DateFormat('yyyy-MM-dd').format(DateTime.now())],
           ),
-        ];
-        state = AsyncValue.data(mockHabits);
-        print('Web mock data loaded: SQLite error $e');
+        ]);
       } else {
         state = AsyncValue.error(e, st);
       }
     }
   }
 
-  Future<void> addHabit(DailyHabit habit) async {
-    await SqliteHelper.instance.insertHabit(habit);
-    loadHabits();
-  }
+  Future<void> loadHabits() => _loadHabits();
 
-  Future<void> toggleHabit(String id) async {
-    state = state.whenData((habits) {
-      final index = habits.indexWhere((h) => h.id == id);
-      if (index != -1) {
-        final habit = habits[index];
-        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        final isCompleting = !habit.isDoneToday;
-        final updatedHabit = StreakService.updateStreakForHabit(
-          habit,
-          isCompleting,
-        );
-        final finalHabit = updatedHabit.copyWith(
-          isDoneToday: isCompleting,
-          lastCompletedDate: isCompleting ? today : null,
-        );
-        SqliteHelper.instance.updateHabit(finalHabit);
+  void _resetDailyStatusIfNeeded(List<DailyHabit> habits) {
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    for (final habit in habits) {
+      if (habit.lastCompletedDate != today && habit.isDoneToday) {
+        habit.isDoneToday = false;
       }
-      return habits;
-    });
-    await loadHabits();
+    }
   }
 
-  Future<void> deleteHabit(String id) async {
-    await SqliteHelper.instance.deleteHabit(id);
-    loadHabits();
+  void _recalculateStreaks(List<DailyHabit> habits) {
+    for (final habit in habits) {
+      habit.streak = StreakService.calculateStreak(habit.historyDates);
+    }
+  }
+
+  Future<void> toggleHabitCompletion(String habitId) async {
+    final current = state;
+    final habits = current.value ?? [];
+    final idx = habits.indexWhere((h) => h.id == habitId);
+    if (idx == -1) return;
+
+    final habit = habits[idx];
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    // Tidak boleh double check dalam 1 hari
+    if (habit.lastCompletedDate == today && habit.isDoneToday) {
+      return;
+    }
+
+    final isCompleting = !habit.isDoneToday;
+
+    final updatedHabit = StreakService.updateStreakForHabit(
+      habit,
+      isCompleting,
+    );
+
+    final finalHabit = updatedHabit.copyWith(
+      isDoneToday: isCompleting,
+      lastCompletedDate: isCompleting ? today : updatedHabit.lastCompletedDate,
+    );
+
+    if (!kIsWeb) {
+      await SqliteHelper.instance.updateHabit(finalHabit);
+    }
+
+    final updatedHabits = [...habits];
+    updatedHabits[idx] = finalHabit;
+    state = AsyncValue.data(updatedHabits);
+  }
+
+  Future<void> addHabit(DailyHabit habit) async {
+    try {
+      if (kIsWeb) {
+        // For web, just add to current state since sqflite doesn't work on web
+        final current = state;
+        final currentHabits = current.value ?? <DailyHabit>[];
+        final habits = [...currentHabits, habit];
+        state = AsyncValue.data(habits);
+        debugPrint('Added habit (web mode): ${habit.name}');
+      } else {
+        await SqliteHelper.instance.insertHabit(habit);
+        await _loadHabits();
+      }
+    } catch (e, st) {
+      debugPrint('Error adding habit: $e');
+      debugPrint('Stack trace: $st');
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> deleteHabit(String habitId) async {
+    try {
+      if (kIsWeb) {
+        // For web, just remove from current state
+        final current = state;
+        final currentHabits = current.value ?? <DailyHabit>[];
+        final habits = currentHabits.where((h) => h.id != habitId).toList();
+        state = AsyncValue.data(habits);
+        debugPrint('Deleted habit (web mode): $habitId');
+      } else {
+        await SqliteHelper.instance.deleteHabit(habitId);
+        await _loadHabits();
+      }
+    } catch (e, st) {
+      debugPrint('Error deleting habit: $e');
+      debugPrint('Stack trace: $st');
+      state = AsyncValue.error(e, st);
+    }
   }
 }
 
-final progressProvider = Provider<Map<String, int>>((ref) {
-  final habitsAsync = ref.watch(habitsProvider);
-  return habitsAsync.when(
-    data: (habits) {
-      final completed = habits.where((h) => h.isDoneToday).length;
-      return {'completed': completed, 'total': habits.length};
-    },
-    loading: () => {'completed': 0, 'total': 0},
-    error: (_, __) => {'completed': 0, 'total': 0},
-  );
-});
+/// Progress hari ini: completed/total
+final dailyProgressProvider = Provider<Map<String, int>>((ref) {
+  final habitsAsync = ref.watch(dailyHabitsProvider);
 
-final statisticsProvider = Provider<Map<String, dynamic>>((ref) {
-  final habitsAsync = ref.watch(habitsProvider);
-  return habitsAsync.when(
-    data: (habits) => StreakService.getStreakStats(habits),
-    loading: () => {},
-    error: (_, __) => {},
+  return habitsAsync.maybeWhen(
+    data: (habits) => {
+      'completed': habits.where((h) => h.isDoneToday).length,
+      'total': habits.length,
+    },
+    orElse: () => {'completed': 0, 'total': 0},
   );
 });

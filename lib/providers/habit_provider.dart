@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+// NOTE: ChangeNotifier provider ini tidak dipakai UI saat ini.
+// Disimpan agar tidak mengganggu build bila ada referensi lama.
+
 import '../models/daily_habit_model.dart';
 import '../db/sqlite_helper.dart';
 import 'package:intl/intl.dart';

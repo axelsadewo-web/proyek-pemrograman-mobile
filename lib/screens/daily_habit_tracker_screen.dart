@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_habit_model.dart';
 import '../db/sqlite_helper.dart';
+import '../providers/habits_riverpod.dart';
 
 // ============================================================================
 // DAILY HABIT TRACKER SCREEN
@@ -101,6 +102,55 @@ class _DailyHabitTrackerScreenState
             ),
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'templates':
+                  Navigator.pushNamed(context, '/templates');
+                  break;
+                case 'stats':
+                  Navigator.pushNamed(context, '/streak-stats');
+                  break;
+                case 'add_custom':
+                  Navigator.pushNamed(context, '/add-habit');
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'templates',
+                child: Row(
+                  children: [
+                    Icon(Icons.library_books, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Template Kebiasaan'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'stats',
+                child: Row(
+                  children: [
+                    Icon(Icons.bar_chart, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Statistik Streak'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'add_custom',
+                child: Row(
+                  children: [
+                    Icon(Icons.add, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Buat Kebiasaan Baru'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, '/add-habit'),
@@ -132,8 +182,8 @@ class _DailyHabitTrackerScreenState
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, st) {
-          print('DailyHabits Error: $error');
-          print('Stack Trace: $st');
+          debugPrint('DailyHabits Error: $error');
+          debugPrint('Stack Trace: $st');
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Center(
@@ -382,6 +432,32 @@ class _DailyHabitTrackerScreenState
                     overflow: TextOverflow.ellipsis,
                   ),
                 if (habit.description.isNotEmpty) const SizedBox(height: 8),
+                if (habit.target.isNotEmpty || habit.schedule.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      if (habit.target.isNotEmpty)
+                        _buildBadge(
+                          label: habit.target,
+                          color: habit.target == 'Harian'
+                              ? Colors.blue.shade100
+                              : Colors.orange.shade100,
+                          icon: habit.target == 'Harian'
+                              ? Icons.calendar_today
+                              : Icons.calendar_view_week,
+                        ),
+                      if (habit.schedule.isNotEmpty)
+                        _buildBadge(
+                          label: habit.schedule,
+                          color: Colors.green.shade100,
+                          icon: Icons.schedule,
+                        ),
+                      _buildStreakBadge(habit.streak),
+                    ],
+                  ),
+                if (habit.target.isNotEmpty || habit.schedule.isNotEmpty)
+                  const SizedBox(height: 8),
                 Text(
                   'Terakhir: ${habit.getLastCompletedDateFormatted()}',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
@@ -391,6 +467,95 @@ class _DailyHabitTrackerScreenState
             trailing: _buildCheckboxAnimated(habit, canCheck),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Build habit label badge
+  Widget _buildBadge({
+    required String label,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey.shade700),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build streak badge with dynamic styling
+  Widget _buildStreakBadge(int streak) {
+    if (streak == 0) return const SizedBox.shrink();
+
+    Color color;
+    IconData icon;
+    String label;
+
+    if (streak >= 30) {
+      color = Colors.red.shade100;
+      icon = Icons.local_fire_department;
+      label = '$streak hari 🔥';
+    } else if (streak >= 7) {
+      color = Colors.orange.shade100;
+      icon = Icons.whatshot;
+      label = '$streak hari ⚡';
+    } else if (streak >= 3) {
+      color = Colors.amber.shade100;
+      icon = Icons.flash_on;
+      label = '$streak hari ✨';
+    } else {
+      color = Colors.purple.shade100;
+      icon = Icons.star;
+      label = '$streak hari ⭐';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: streak >= 7
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey.shade700),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

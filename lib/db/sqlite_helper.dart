@@ -22,7 +22,7 @@ class SqliteHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onOpen: _onOpen,
@@ -37,6 +37,7 @@ class SqliteHelper {
         description TEXT,
         category TEXT NOT NULL,
         target TEXT NOT NULL,
+        schedule TEXT NOT NULL DEFAULT 'Setiap hari',
         is_done_today INTEGER NOT NULL DEFAULT 0,
         last_completed_date TEXT,
         streak INTEGER NOT NULL DEFAULT 0,
@@ -54,6 +55,7 @@ class SqliteHelper {
         description TEXT,
         category TEXT NOT NULL,
         target TEXT NOT NULL,
+        schedule TEXT NOT NULL DEFAULT 'Setiap hari',
         is_done_today INTEGER NOT NULL DEFAULT 0,
         last_completed_date TEXT,
         streak INTEGER NOT NULL DEFAULT 0,
@@ -64,10 +66,23 @@ class SqliteHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      // Drop old habits table if exists, then create the current daily_habits schema
-      await db.execute('DROP TABLE IF EXISTS habits');
-      await _createDB(db, newVersion);
+    if (oldVersion < 3) {
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='$_habitsTable'",
+      );
+      if (tables.isNotEmpty) {
+        final columns = await db.rawQuery("PRAGMA table_info($_habitsTable)");
+        final hasSchedule = columns.any(
+          (column) => column['name'] == 'schedule',
+        );
+        if (!hasSchedule) {
+          await db.execute(
+            "ALTER TABLE $_habitsTable ADD COLUMN schedule TEXT NOT NULL DEFAULT 'Setiap hari'",
+          );
+        }
+      } else {
+        await _createDB(db, newVersion);
+      }
     }
   }
 

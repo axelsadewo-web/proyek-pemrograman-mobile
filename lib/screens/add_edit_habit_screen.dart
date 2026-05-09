@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_habit_model.dart';
+import '../providers/habits_riverpod.dart';
 
 class AddEditHabitScreen extends ConsumerStatefulWidget {
   final DailyHabit? habit;
@@ -16,6 +17,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   late TextEditingController _descriptionController;
   late String _selectedCategory;
   late String _selectedTarget;
+  late String _selectedSchedule;
   final _formKey = GlobalKey<FormState>();
 
   final List<String> _categories = [
@@ -37,6 +39,16 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
   };
 
   final List<String> _targets = ['Harian', 'Mingguan'];
+  final List<String> _schedules = [
+    'Setiap hari',
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
+  ];
 
   @override
   void initState() {
@@ -52,11 +64,13 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
       );
       _selectedCategory = widget.habit!.category;
       _selectedTarget = widget.habit!.target;
+      _selectedSchedule = widget.habit!.schedule;
     } else {
       _nameController = TextEditingController();
       _descriptionController = TextEditingController();
       _selectedCategory = _categories.first;
       _selectedTarget = _targets.first;
+      _selectedSchedule = _schedules.first;
     }
   }
 
@@ -77,6 +91,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
         description: _descriptionController.text.trim(),
         category: _selectedCategory,
         target: _selectedTarget,
+        schedule: _selectedSchedule,
       );
 
       await ref.read(dailyHabitsProvider.notifier).addHabit(habit);
@@ -136,8 +151,9 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                 ),
                 maxLength: 50,
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty)
+                  if (value == null || value.trim().isEmpty) {
                     return 'Nama tidak boleh kosong';
+                  }
                   if (value.trim().length < 3) return 'Minimal 3 karakter';
                   return null;
                 },
@@ -177,7 +193,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: DropdownButton<String>(
@@ -197,8 +213,9 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                     );
                   }).toList(),
                   onChanged: (value) {
-                    if (value != null)
+                    if (value != null) {
                       setState(() => _selectedCategory = value);
+                    }
                   },
                 ),
               ),
@@ -212,7 +229,7 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -222,14 +239,46 @@ class _AddEditHabitScreenState extends ConsumerState<AddEditHabitScreen> {
                       value: target,
                       groupValue: _selectedTarget,
                       onChanged: (value) {
-                        if (value != null)
+                        if (value != null) {
                           setState(() => _selectedTarget = value);
+                        }
                       },
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                       ),
                     );
                   }).toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Jadwal',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButton<String>(
+                  value: _selectedSchedule,
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  items: _schedules.map((schedule) {
+                    return DropdownMenuItem(
+                      value: schedule,
+                      child: Text(schedule),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedSchedule = value);
+                    }
+                  },
                 ),
               ),
               const SizedBox(height: 32),
