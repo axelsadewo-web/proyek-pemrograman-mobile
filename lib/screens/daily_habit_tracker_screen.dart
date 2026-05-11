@@ -112,6 +112,9 @@ class _DailyHabitTrackerScreenState
                 case 'stats':
                   Navigator.pushNamed(context, '/streak-stats');
                   break;
+                case 'streak_calendar':
+                  Navigator.pushNamed(context, '/streak-calendar');
+                  break;
                 case 'add_custom':
                   Navigator.pushNamed(context, '/add-habit');
                   break;
@@ -135,6 +138,16 @@ class _DailyHabitTrackerScreenState
                     Icon(Icons.bar_chart, color: Colors.orange),
                     SizedBox(width: 8),
                     Text('Statistik Streak'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'streak_calendar',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month, color: Colors.deepPurple),
+                    SizedBox(width: 8),
+                    Text('Kalender Streak'),
                   ],
                 ),
               ),
@@ -562,6 +575,10 @@ class _DailyHabitTrackerScreenState
 
   /// Build animated checkbox
   Widget _buildCheckboxAnimated(DailyHabit habit, bool canCheck) {
+    // canCheckTodayByDate() hanya mengizinkan ceklis jika belum done hari ini.
+    // Untuk membatalkan ceklis, kita selalu izinkan (habit.isDoneToday=true => bisa di-uncheck).
+    final canToggle = canCheck || habit.isDoneToday;
+
     return AnimatedScale(
       scale: habit.isDoneToday ? 1.2 : 1.0,
       duration: const Duration(milliseconds: 300),
@@ -573,7 +590,7 @@ class _DailyHabitTrackerScreenState
         ),
         child: Checkbox(
           value: habit.isDoneToday,
-          onChanged: canCheck
+          onChanged: canToggle
               ? (_) => ref
                     .read(dailyHabitsProvider.notifier)
                     .toggleHabitCompletion(habit.id)

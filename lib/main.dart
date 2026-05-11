@@ -8,6 +8,7 @@ import 'screens/daily_habit_tracker_screen.dart';
 import 'screens/add_edit_habit_screen.dart';
 import 'screens/habit_templates_screen.dart';
 import 'screens/streak_stats_screen.dart';
+import 'screens/streak_calendar_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ class MyApp extends ConsumerWidget {
         '/add-habit': (context) => const AddEditHabitScreen(),
         '/templates': (context) => const HabitTemplatesScreen(),
         '/streak-stats': (context) => const StreakStatsScreen(),
+        '/streak-calendar': (context) => const StreakCalendarScreen(),
       },
     );
   }
